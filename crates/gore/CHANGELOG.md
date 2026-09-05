@@ -5,6 +5,8 @@ uses the matching version section as the GitHub release notes.
 
 ## [Unreleased]
 
+- `gore npc list|show|sites`: read the game's characters, their class chain,
+  and where they spawn.
 - Support multi-module mini-caches: `gore as compile --mini` publishes the
   authored modules as one deployable mini, and build, deploy, the Manager and
   `as splice --upsert` compose it as one unit. Qualified in game with a
