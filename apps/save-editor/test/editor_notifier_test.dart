@@ -140,7 +140,7 @@ void main() {
       );
       expect(scan.payload.containsKey('binaryHost'), isFalse);
       expect(scan.payload, {'path': r'C:\tmp\saves'});
-      expect(notifier.state.profiles.single.displayName, 'Profile 0');
+      expect(notifier.state.profiles.single.displayName, 'Profile 1');
       expect(notifier.state.activeProfile?.profileId, 0);
       expect(notifier.state.selectedSave?.screenshot?.byteLength, 6);
     },

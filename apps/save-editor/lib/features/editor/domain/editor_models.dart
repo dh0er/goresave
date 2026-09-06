@@ -248,11 +248,11 @@ class ProfileSummary {
   final int? maxQuick;
   final int? maxAuto;
 
-  String get displayName {
-    final name = profileName?.trim();
-    if (name == null || name.isEmpty) return 'Profile $profileId';
-    return name == profileId.toString() ? 'Profile $name' : name;
-  }
+  String get displayName => 'Profile $displayNumber';
+
+  /// The game numbers its fixed profile slots from 1, while save data uses
+  /// zero-based ids. `m_ProfileName` is not authoritative and can be stale.
+  int get displayNumber => gameProfileNumber(profileId);
 
   /// The profile's difficulty, mapped into the same [DifficultySettings] shape
   /// the editor uses. This is the authoritative, profile-wide difficulty — the
@@ -266,6 +266,8 @@ class ProfileSummary {
     permadeath: permanentDeath,
   );
 }
+
+int gameProfileNumber(int profileId) => profileId + 1;
 
 /// Maps a difficulty class short-name suffix to its UI label.
 String _difficultyLevelLabel(String? className) {

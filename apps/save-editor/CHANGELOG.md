@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Game profiles are now always shown as Profile 1 through Profile 4, matching
+  the game instead of exposing stale internal profile names or zero-based ids.
 - The misleading restock-baseline editor has been removed because the game
   rebuilds that inventory itself. The tab now focuses on the merchant's current
   stock and clearly warns that changes last only until the next restock.
