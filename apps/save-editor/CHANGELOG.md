@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   stock and clearly warns that changes last only until the next restock.
 - Ore and restock details now use a compact responsive layout with concise status
   information and explanatory tooltips.
+- The Resources difficulty shown beside the restock wait now follows the app
+  language.
 
 ## [1.4.0] - 2026-08-31
 

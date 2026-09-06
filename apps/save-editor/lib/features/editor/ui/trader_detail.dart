@@ -67,6 +67,14 @@ double _headCap(double available) {
   return cap > 0 ? cap : 0;
 }
 
+String _localizedResourcesLevel(AppLocalizations l10n, String level) =>
+    switch (level) {
+      'Novice' => l10n.presetNovice,
+      'Gothic' => l10n.presetGothic,
+      'Hard' => l10n.presetHard,
+      _ => level,
+    };
+
 class _TraderPanelState extends ConsumerState<TraderPanel> {
   TradersResult? _list;
   TraderDetail? _detail;
@@ -867,7 +875,10 @@ class _RestockCard extends StatelessWidget {
         : '${_clock(l10n, early)} – ${_clock(l10n, conservative)}';
     final interval = resourcesLevel == null || forecast == null
         ? l10n.traderRestockIntervalUnknown
-        : l10n.traderRestockInterval(forecast.intervalDays, resourcesLevel!);
+        : l10n.traderRestockInterval(
+            forecast.intervalDays,
+            _localizedResourcesLevel(l10n, resourcesLevel!),
+          );
     final forecastState = forecast?.state;
     final statusText = resourcesLevel == null
         ? l10n.traderRestockStatusUnknown

@@ -442,6 +442,7 @@ void main() {
       WidgetTester tester,
       GoresaveCoreService core, {
       bool showObjectIds = false,
+      String appLocale = 'en',
       Map<String, Map<String, String>>? locCatalog,
       Size surface = const Size(1400, 1000),
     }) async {
@@ -455,7 +456,10 @@ void main() {
               const NoopEditorSettingsStore(),
             ),
             uiSettingsStoreProvider.overrideWithValue(
-              TestUiSettingsStore(showObjectIds: showObjectIds),
+              TestUiSettingsStore(
+                showObjectIds: showObjectIds,
+                appLocale: appLocale,
+              ),
             ),
             if (locCatalog != null)
               locCatalogProvider.overrideWith((ref) async => locCatalog),
@@ -635,6 +639,27 @@ void main() {
       expect(find.text('Add item'), findsOneWidget);
       final baseRow = find.byKey(const ValueKey((TraderStockMap.base, loaf)));
       expect(baseRow, findsNothing);
+    });
+
+    testWidgets('restock difficulty follows the app language', (tester) async {
+      for (final (resourceClass, expected) in [
+        ('Easy', '2 Tage · Novize'),
+        ('Hard', '5 Tage · Schwer'),
+      ]) {
+        await pumpApp(
+          tester,
+          _DifficultyTraderCoreService(resourceClass),
+          appLocale: 'de',
+        );
+        await tester.tap(find.widgetWithText(Tab, 'Charaktere'));
+        await tester.pumpAndSettle();
+        await tester.tap(detailTab('Handel'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(expected), findsOneWidget);
+        expect(find.textContaining('Novice'), findsNothing);
+        expect(find.textContaining('Hard'), findsNothing);
+      }
     });
 
     testWidgets('custom time can initialize a never-active merchant', (
@@ -1922,5 +1947,37 @@ class _TraderCoreService implements GoresaveCoreService {
           'error': {'message': 'Unhandled fake command $command'},
         };
     }
+  }
+}
+
+class _DifficultyTraderCoreService extends _TraderCoreService {
+  _DifficultyTraderCoreService(this.resourceClass)
+    : super(playerIsTrader: true);
+
+  final String resourceClass;
+
+  @override
+  Future<Map<String, Object?>> execute(
+    String command, {
+    Map<String, Object?> payload = const {},
+  }) async {
+    final response = await super.execute(command, payload: payload);
+    if (command != 'scan_save_dir') return response;
+
+    final data = (response['data'] as Map).cast<String, Object?>();
+    final save = ((data['saves'] as List).single as Map)
+        .cast<String, Object?>();
+    save['persistentProfileId'] = 0;
+    data['profiles'] = [
+      {
+        'profileId': 0,
+        'profileName': '0',
+        'savedSlots': ['G1R-001'],
+        'difficultyPreset': 'DifficultyPreset_Custom',
+        'customResourcesSettings': 'ResourcesDifficultySettings_$resourceClass',
+      },
+    ];
+    data['activeProfileId'] = 0;
+    return response;
   }
 }
