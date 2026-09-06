@@ -250,9 +250,15 @@ class ProfileSummary {
 
   String get displayName => 'Profile $displayNumber';
 
-  /// The game numbers its fixed profile slots from 1, while save data uses
-  /// zero-based ids. `m_ProfileName` is not authoritative and can be stale.
-  int get displayNumber => gameProfileNumber(profileId);
+  /// The game-facing slot is stored as a zero-based numeric `m_ProfileName`.
+  /// It can differ from the stable internal id used by save mutations.
+  int get displayNumber {
+    final gameSlot = int.tryParse(profileName?.trim() ?? '');
+    if (gameSlot != null && gameSlot >= 0 && gameSlot < 4) {
+      return gameSlot + 1;
+    }
+    return gameProfileNumber(profileId);
+  }
 
   /// The profile's difficulty, mapped into the same [DifficultySettings] shape
   /// the editor uses. This is the authoritative, profile-wide difficulty — the

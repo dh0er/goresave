@@ -3,8 +3,8 @@ import 'package:goresave/l10n/app_localizations.dart';
 
 /// Returns the game's one-based profile-slot label.
 ///
-/// `m_ProfileName` can contain stale or crossed numeric values, so the stable
-/// internal id is the only reliable source for the visible slot number.
+/// The numeric `m_ProfileName` identifies the game-facing slot and can differ
+/// from the stable internal id used to read and write that profile.
 String localizedProfileDisplayName(
   AppLocalizations l10n,
   ProfileSummary profile,

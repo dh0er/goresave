@@ -66,7 +66,7 @@ void main() {
     expect(profile.maxQuick, 3);
   });
 
-  test('ProfileSummary ignores stale names and uses one-based slot labels', () {
+  test('ProfileSummary maps numeric game slots independently from ids', () {
     final profiles = [
       {'profileId': 0, 'profileName': '0'},
       {'profileId': 1, 'profileName': '1'},
@@ -77,8 +77,8 @@ void main() {
     expect(profiles.map((profile) => profile.displayName), [
       'Profile 1',
       'Profile 2',
-      'Profile 3',
       'Profile 4',
+      'Profile 3',
     ]);
   });
 

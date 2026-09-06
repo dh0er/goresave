@@ -2051,7 +2051,7 @@ void main() {
     );
   });
 
-  testWidgets('profile switcher ignores stale names and keeps game order', (
+  testWidgets('profile switcher follows game slots instead of internal ids', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
@@ -2088,13 +2088,20 @@ void main() {
     expect(profileChoices, [
       'profile:0',
       'profile:1',
-      'profile:2',
       'profile:3',
+      'profile:2',
     ]);
     expect(find.text('Profile 1 (1 saves)'), findsOneWidget);
     expect(find.text('Profile 2 (0 saves)'), findsOneWidget);
     expect(find.text('Profile 3 (0 saves)'), findsOneWidget);
     expect(find.text('Profile 4 (0 saves)'), findsOneWidget);
+
+    await tester.tap(find.text('Profile 4 (0 saves)'));
+    await tester.pumpAndSettle();
+    final state = ProviderScope.containerOf(
+      tester.element(find.byType(Scaffold).first),
+    ).read(editorProvider);
+    expect(state.selectedProfileId, 2);
   });
 
   testWidgets(

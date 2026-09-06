@@ -2265,9 +2265,14 @@ class EditorNotifier extends StateNotifier<EditorState> {
                 .whereType<Map>()
                 .map((m) => ProfileSummary.fromJson(m.cast<String, Object?>()))
                 .toList()
-              ..sort(
-                (left, right) => left.profileId.compareTo(right.profileId),
-              );
+              ..sort((left, right) {
+                final displayOrder = left.displayNumber.compareTo(
+                  right.displayNumber,
+                );
+                return displayOrder != 0
+                    ? displayOrder
+                    : left.profileId.compareTo(right.profileId);
+              });
         final profileBySavedSlot = <String, int>{
           for (final profile in profiles)
             for (final slot in profile.savedSlots) slot: profile.profileId,
@@ -2626,7 +2631,10 @@ class EditorNotifier extends StateNotifier<EditorState> {
     }
     final save = state.selectedSave;
     if (save == null) return false;
-    if (!state.profiles.any((profile) => profile.profileId == profileId)) {
+    final targetProfile = state.profiles
+        .where((profile) => profile.profileId == profileId)
+        .firstOrNull;
+    if (targetProfile == null) {
       state = state.copyWith(
         error: _l10n.editorProfileNotFound(gameProfileNumber(profileId)),
       );
@@ -2689,8 +2697,8 @@ class EditorNotifier extends StateNotifier<EditorState> {
       failureMessage: (details) => _l10n.editorProfileAssignmentFailed(details),
       message: (data) {
         final assigned = save.isExternal
-            ? _l10n.editorSaveImportedAssigned(gameProfileNumber(profileId))
-            : _l10n.editorSaveAssigned(gameProfileNumber(profileId));
+            ? _l10n.editorSaveImportedAssigned(targetProfile.displayNumber)
+            : _l10n.editorSaveAssigned(targetProfile.displayNumber);
         // An import copies the save's undo notes across after the bytes land.
         // If that failed, the imported save can hold a pinned NPC with no
         // record of the routine the pin replaced.
@@ -2751,10 +2759,7 @@ class EditorNotifier extends StateNotifier<EditorState> {
         .firstOrNull;
     if (!profile.savedSlots.contains(slot) && save == null) {
       state = state.copyWith(
-        error: _l10n.editorSaveSlotNotAssigned(
-          slot,
-          gameProfileNumber(profileId),
-        ),
+        error: _l10n.editorSaveSlotNotAssigned(slot, profile.displayNumber),
       );
       return false;
     }
@@ -2832,10 +2837,7 @@ class EditorNotifier extends StateNotifier<EditorState> {
         .firstOrNull;
     if (save == null || !profile.savedSlots.contains(slot)) {
       state = state.copyWith(
-        error: _l10n.editorSaveSlotNotAssigned(
-          slot,
-          gameProfileNumber(profileId),
-        ),
+        error: _l10n.editorSaveSlotNotAssigned(slot, profile.displayNumber),
       );
       return false;
     }
