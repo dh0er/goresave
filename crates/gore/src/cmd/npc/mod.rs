@@ -146,7 +146,7 @@ pub enum NpcAction {
         #[arg(short, long)]
         out: PathBuf,
     },
-    /// Take a shipped character's own module out for editing
+    /// Check out a shipped character's own module for edits that preserve its existing default targets
     Checkout {
         /// The character to edit, for example OC_STT_Diego
         npc: String,
@@ -1280,23 +1280,22 @@ fn stage_workspace(
     gore_mod::validate_mod_name(mod_name).context("invalid --mod-name")?;
     let manifest = read_manifest(dir)?;
     let path = cache_path(cache, game.clone())?;
-    // Der Weg haengt auch am Inhalt: ein Modul mit Klassen-Defaults lehnt `compile-module` ab.
-    let edited_source = match manifest.level_edit() {
-        Some(edit) => fs::read_to_string(dir.join(&edit.source_file))
-            .with_context(|| format!("reading {}", edit.source_file))?,
-        None => String::new(),
+    let route = stage::route_of(&manifest);
+    let game = match route {
+        stage::Route::SingleModule => {
+            let edit = manifest
+                .level_edit()
+                .context("the manifest names no edited module")?;
+            let source = dir.join(&edit.source_file);
+            fs::read_to_string(&source).with_context(|| format!("reading {}", source.display()))?;
+            Some(stage::compiler_game_for(&manifest, &path, game)?)
+        }
+        stage::Route::FullTree => game,
     };
-    let route = stage::route_of(&manifest, &edited_source);
 
     let tree_display = match (route, tree) {
         (stage::Route::FullTree, None) => {
-            let why = if manifest.authored_module().is_some() {
-                "a new character brings a module of its own that the level script calls, and the \
-                 two only compile together"
-            } else {
-                "this module carries class defaults, and `compile-module` refuses those: it \
-                 cannot inventory their `__InitDefaults` and says so rather than guessing"
-            };
+            let why = "a new character brings a module of its own that the level script calls, and the two only compile together";
             bail!(
                 "this work needs a source tree: pass --tree <dir>. {why}. The tree is emitted \
                  once per game version and reused after that"
@@ -1328,7 +1327,6 @@ fn stage_workspace(
     let game_arg = game.as_ref().map(|path| path.display().to_string());
     let commands = stage::build_commands(
         &manifest,
-        &edited_source,
         &dir.display().to_string(),
         &tree_display,
         mod_name,
@@ -1467,10 +1465,7 @@ fn checkout(npc: &str, cache: Option<PathBuf>, game: Option<PathBuf>, out: &Path
     println!("checked {npc} out into {}", out.display());
     println!("  {leaf}  {class_count} classes from {module_name}");
     println!("  {}", render::translation_line(&emitted, &module_name));
-    println!(
-        "  edit the values; class names and their parents have to stay as they are, because they \
-         are the character's identity in the cache"
-    );
+    println!("  edit the values; keep every existing default target, class name and parent");
     println!("next: gore npc check {}", out.display());
     Ok(())
 }

@@ -355,21 +355,39 @@ $ gore npc check work/diego
   [blocking] class UCharacterDefinition_Human_RENAMED is new. Checking a shipped character out is for changing its values; a new class needs `gore npc new`, which carries the contract for one
 ```
 
-A checkout still needs the full-tree route, and not because of how many modules
-it touches. `compile-module` refuses a module whose class defaults it cannot
-inventory:
+A checkout builds through the single-module standalone route. After editing a
+value, run:
 
-```
-refusing default-target preservation for edit module
-"…CharacterDefinition_OC_STT_Diego": unsupported store opcode STOREOBJ at
-dword 336; default-target coverage is unproven
+```powershell
+gore npc check work/diego
+gore npc stage work/diego --mod-name ToughDiego
+# Run the printed compile-module and mod build commands.
 ```
 
-A character definition is nothing but class defaults, so it always lands there.
-A level script carries none — which is why suppressing a character compiles in
-37 seconds while changing one takes the long road. `stage` picks by what the
-edited module contains, not by counting modules, and says which of the two
-reasons applies when it asks for `--tree`.
+No emitted full tree is needed for this one-module edit. Both compiler routes
+require every shipped default target to remain at least as often in the source
+and in the regenerated module. Keep all 44 Diego defaults when changing his
+health or inventory; removing an existing assignment or call is refused.
+
+The default-target proof distinguishes temporary values from member writes:
+`STOREOBJ` and `CpyRtoV8` are accepted only when their entire destination lies
+inside the function's local frame. `REFCPY` must resolve a member chain rooted
+in `this`, and that member counts as a preserved target. Unknown destinations
+still refuse. The four other previously unsupported copy opcodes remain
+unsupported; none occurs in the measured shipped initializers.
+
+`check` validates the workspace and class structure; the compiler performs the
+bytecode preservation proof before publishing a result. A successful offline
+build alone does not prove that the edited values appeared in a new game.
+
+The `ToughDiego` fixture crossed that boundary on 2026-09-06, BuildID `24878692`:
+checkout, edit both health defaults from 540 to 1234, compile-module, build,
+inspect, deploy, then a new game played and saved by the user. Reading that save
+with `private.npc.attributes` found `Health` and `MaxHealth` both at **1234**,
+for both base and current values, under
+`OC_STT_Diego-WP_EZ_START_DIEGO_SPAWN`. This proves the edited health reached
+runtime and serialization; it does not establish save/reload behavior or every
+other default's runtime effect.
 
 ### `npc check` — the diff guard
 
@@ -520,8 +538,16 @@ What that took, and what each cost, is worth knowing before authoring:
 - **`--modular-visuals` does not reproduce the template's look.** `B` was built
   that way and came out looking like the player character, not like Diego. The
   path produces a working body — so it is no longer unproven in the sense of
-  "might not render" — but it does not carry the parts across. Prefer the
-  default borrowed model until somebody works out why.
+  "might not render" — but it does not carry the parts across.
+
+  Worth knowing for anyone who picks this up: the data is demonstrably present.
+  `B`'s visuals class derives from Diego's and overrides nothing but
+  `m_HasPreBakedSK`, so it inherits `Person`, `BodyType`, `Clothes = "Shadow"`,
+  `Shirt_01`, `Armor_01` and the rest. The runtime simply does not use them on
+  that path. Which asset it does use is not visible from the script side — the
+  base classes name `m_MutableAsset` (`MO_Player` on the human base,
+  `MO_Characters` on the male-NPC base), and the player look suggests the former
+  wins, but nothing here proves it. Prefer the borrowed model.
 - **The daily routine does not move the character.** Both stayed at their world
   point; `location` and `spawnLocation` in the save were identical. The routine
   compiles and the character carries it, but nothing observed it running, and
@@ -531,8 +557,9 @@ What that took, and what each cost, is worth knowing before authoring:
 - **Save and reload across sessions**, and anything about quests, knowledge or
   relationships for an authored identity.
 
-Changing a shipped character's values is `npc checkout`, described above, and
-that one has **not** been through the game at all — only the authoring path has.
+Changing a shipped character's values is `npc checkout`, described above. The
+Diego health edit has been verified in a user-created new-game save; broader
+value edits and loading that save in another session remain untested.
 What checkout does not reach either: visuals and the spawn definition, which
 live in modules hundreds of characters share, and what a character says. Use the
 surfaces that do:
