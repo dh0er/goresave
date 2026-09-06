@@ -449,18 +449,162 @@ class AppLocalizationsPl extends AppLocalizations {
   String get traderNoOre => 'brak rudy';
 
   @override
-  String get traderStockCurrent => 'Zapas';
+  String get traderStockCurrent => 'Zapisany zapas';
 
   @override
-  String get traderStockBase => 'Baza uzupełniania';
+  String get traderStockCurrentTooltip =>
+      'Zapas zapisany obecnie dla tego kupca. Dodane przedmioty mogą zniknąć, gdy gra ponownie zaktualizuje kupca.';
+
+  @override
+  String get traderStockBase => 'Zapas odniesienia';
+
+  @override
+  String get traderStockBaseTooltip =>
+      'Zapisana kopia, którą gra może zmienić lub utworzyć ponownie zgodnie z zasadami tego kupca. Jest tylko do odczytu i nie zachowuje dodanych przedmiotów na stałe.';
 
   @override
   String get traderStockBaseHint =>
-      'To, do czego kupiec uzupełnia zapasy. Rośnie wraz z fabułą, więc nie jest stanem pierwotnym.';
+      'Tylko do odczytu. Ten zapisany zapas rośnie wraz z fabułą i może zostać zastąpiony zgodnie z zasadami kupca. Nie jest to początkowy zapas z gry.';
+
+  @override
+  String get traderCurrentStockWarning =>
+      'Zmiany w ekwipunku kupca obowiązują tylko do następnego uzupełnienia.';
+
+  @override
+  String get traderRestockTitle => 'Szacowane uzupełnienie';
+
+  @override
+  String get traderRestockTitleTooltip =>
+      'Szacunek na podstawie ostatniej aktywności kupca, czasu w grze i poziomu trudności Zasobów.';
+
+  @override
+  String get traderRestockPending => 'oczekuje';
+
+  @override
+  String get traderRestockRevertTooltip =>
+      'Cofnij niezapisaną zmianę ostatniej aktywności';
+
+  @override
+  String get traderRestockNever => 'Nigdy';
+
+  @override
+  String get traderRestockUnavailable => 'Niedostępne';
+
+  @override
+  String get traderRestockIntervalUnknown => 'Nieznana liczba dni w grze';
+
+  @override
+  String get traderRestockNeverStatus =>
+      'Nie zapisano jeszcze żadnej aktywności tego kupca.';
+
+  @override
+  String get traderRestockClockAhead =>
+      'Ostatnia aktywność kupca jest późniejsza niż bieżący czas w grze.';
+
+  @override
+  String traderRestockNotDueYet(String time) {
+    return 'Nie wcześniej niż $time.';
+  }
+
+  @override
+  String get traderRestockPossiblyDue =>
+      'Szacunek: zapas może już być gotowy do aktualizacji.';
+
+  @override
+  String get traderRestockEligible => 'Szacunek: pora na uzupełnienie.';
+
+  @override
+  String get traderRestockNoWorldTime =>
+      'Brak bieżącego czasu w grze, więc nie można niczego oszacować.';
+
+  @override
+  String get traderRestockLastActivity => 'Ostatnia aktywność kupca';
+
+  @override
+  String get traderRestockLastActivityTooltip =>
+      'Ten zapisany czas może się zmienić po handlu lub po aktualizacji zapasu przez grę. Nie musi oznaczać ostatniego uzupełnienia.';
+
+  @override
+  String get traderRestockForecastWindow => 'Szacowany czas';
+
+  @override
+  String get traderRestockForecastWindowTooltip =>
+      'Pokazuje najwcześniejszy i najpóźniejszy prawdopodobny czas uzupełnienia. Zapis nie zawiera dokładnych zasad gry, więc jest to tylko szacunek.';
+
+  @override
+  String get traderRestockIntervalLabel => 'Dni między uzupełnieniami';
+
+  @override
+  String traderRestockInterval(int days, String level) {
+    return '$days dni · $level';
+  }
+
+  @override
+  String get traderRestockIntervalTooltip =>
+      'Według poziomu trudności Zasobów: Nowicjusz 2, Gothic 3, Trudny 5 dni w grze.';
+
+  @override
+  String get traderRestockAutomationLabel => 'Automatyczne uzupełnianie';
+
+  @override
+  String get traderRestockAutomationValue => 'Nie można wyłączyć w zapisie';
+
+  @override
+  String get traderRestockAutomationTooltip =>
+      'Automatycznego uzupełniania nie można wyłączyć w zapisie. Tę zasadę gry może zmienić tylko mod.';
+
+  @override
+  String get traderRestockSetNow => 'Ustaw na czas w grze';
+
+  @override
+  String get traderRestockSetNowTooltip =>
+      'Użyj bieżącego czasu w grze, wraz z niezapisaną zmianą, jako ostatniej aktywności kupca. Przesunie to szacowane uzupełnienie na później.';
+
+  @override
+  String get traderRestockMakeDue => 'Przygotuj uzupełnienie';
+
+  @override
+  String get traderRestockMakeDueTooltip =>
+      'Przesuń ostatnią aktywność wystarczająco daleko w przeszłość, aby nadeszła pora uzupełnienia.';
+
+  @override
+  String get traderRestockCustom => 'Własny czas…';
+
+  @override
+  String get traderRestockCustomTooltip =>
+      'Wybierz dzień i godzinę w grze dla ostatniej aktywności kupca.';
+
+  @override
+  String get traderRestockEditTitle => 'Ostatnia aktywność kupca';
 
   @override
   String get traderOreHint =>
       'Wartość w grze się różni: przy wczytaniu gra dolicza to, co narosło od jego ostatniego handlu — sprzedaje nadwyżki i z tego uzupełnia zapasy. Ta liczba to punkt wyjścia, a nie kwota z ekranu handlu.';
+
+  @override
+  String get traderOreHintShort =>
+      'Wartość początkowa — kwota na ekranie handlu może się różnić.';
+
+  @override
+  String get traderRestockStatusLabel => 'Stan';
+
+  @override
+  String get traderRestockStatusNever => 'Brak aktywności';
+
+  @override
+  String get traderRestockStatusWaiting => 'Oczekiwanie na uzupełnienie';
+
+  @override
+  String get traderRestockStatusReady => 'Gotowy do uzupełnienia';
+
+  @override
+  String get traderRestockStatusPossiblyReady => 'Być może gotowy';
+
+  @override
+  String get traderRestockStatusCheckTime => 'Sprawdź zapisany czas';
+
+  @override
+  String get traderRestockStatusUnknown => 'Nieznany';
 
   @override
   String get traderPriceWarning =>

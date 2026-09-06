@@ -450,15 +450,161 @@ class AppLocalizationsDe extends AppLocalizations {
   String get traderStockCurrent => 'Bestand';
 
   @override
+  String get traderStockCurrentTooltip =>
+      'Was dieser Händler gerade verkauft. Hinzugefügte Items können wieder verschwinden, wenn das Spiel den Händler aktualisiert.';
+
+  @override
   String get traderStockBase => 'Nachschub-Basis';
 
   @override
+  String get traderStockBaseTooltip =>
+      'Der Spielstand enthält diese Liste als Grundlage für den Nachschub. Das Spiel kann sie anhand seiner Händlerregeln neu berechnen; eigene Änderungen wären daher nicht dauerhaft.';
+
+  @override
   String get traderStockBaseHint =>
-      'Worauf der Händler wieder auffüllt. Wächst mit dem Story-Fortschritt, ist also kein Vanilla-Stand.';
+      'Nur lesbar: Das Spiel verwendet diese Liste beim Nachschub, kann sie aber neu berechnen. Hier hinzugefügte Items würden nicht dauerhaft bleiben.';
+
+  @override
+  String get traderCurrentStockWarning =>
+      'Änderungen am Händler-Inventar gelten nur bis zum nächsten Nachschub.';
+
+  @override
+  String get traderRestockTitle => 'Händler-Nachschub';
+
+  @override
+  String get traderRestockTitleTooltip =>
+      'Schätzung aus der letzten Händleraktivität, der aktuellen Spielzeit und der Ressourcen-Schwierigkeit.';
+
+  @override
+  String get traderRestockPending => 'ausstehend';
+
+  @override
+  String get traderRestockRevertTooltip =>
+      'Ausstehende Zeitänderung zurücknehmen';
+
+  @override
+  String get traderRestockNever => 'Noch nie';
+
+  @override
+  String get traderRestockUnavailable => 'Nicht verfügbar';
+
+  @override
+  String get traderRestockIntervalUnknown => 'Wartezeit unbekannt';
+
+  @override
+  String get traderRestockNeverStatus =>
+      'Für diesen Händler ist noch keine Aktivität gespeichert.';
+
+  @override
+  String get traderRestockClockAhead =>
+      'Die gespeicherte Händlerzeit liegt vor der aktuellen Spielzeit.';
+
+  @override
+  String traderRestockNotDueYet(String time) {
+    return 'Nicht vor $time zu erwarten.';
+  }
+
+  @override
+  String get traderRestockPossiblyDue =>
+      'Der Händler könnte bereits für Nachschub bereit sein.';
+
+  @override
+  String get traderRestockEligible =>
+      'Der Händler sollte jetzt für Nachschub bereit sein.';
+
+  @override
+  String get traderRestockNoWorldTime =>
+      'Die aktuelle Spielzeit fehlt; deshalb lässt sich die Fälligkeit nicht bestimmen.';
+
+  @override
+  String get traderRestockLastActivity => 'Letzte Händleraktivität';
+
+  @override
+  String get traderRestockLastActivityTooltip =>
+      'Der letzte für diesen Händler gespeicherte Zeitpunkt. Er kann vom Handel oder einer anderen Händleraktualisierung stammen und ist daher nicht zwingend der letzte Nachschub.';
+
+  @override
+  String get traderRestockForecastWindow => 'Nachschub erwartet';
+
+  @override
+  String get traderRestockForecastWindowTooltip =>
+      'Der genaue Zeitpunkt steht nicht im Spielstand. Deshalb zeigt der Editor einen Zeitraum vom frühesten bis zum spätesten erwarteten Zeitpunkt.';
+
+  @override
+  String get traderRestockIntervalLabel => 'Wartezeit';
+
+  @override
+  String traderRestockInterval(int days, String level) {
+    return '$days Tage · $level';
+  }
+
+  @override
+  String get traderRestockIntervalTooltip =>
+      'Wartezeit je nach Ressourcen-Schwierigkeit: Anfänger 2, Gothic 3, Schwer 5 Spieltage.';
+
+  @override
+  String get traderRestockAutomationLabel => 'Automatischer Nachschub';
+
+  @override
+  String get traderRestockAutomationValue =>
+      'In diesem Spielstand nicht abschaltbar';
+
+  @override
+  String get traderRestockAutomationTooltip =>
+      'Der Save-Editor kann den automatischen Nachschub nicht zuverlässig stoppen. Dafür wäre eine Spiel-Mod nötig.';
+
+  @override
+  String get traderRestockSetNow => 'Auf aktuelle Spielzeit setzen';
+
+  @override
+  String get traderRestockSetNowTooltip =>
+      'Die aktuelle Spielzeit als letzte Händleraktivität übernehmen. Dadurch wird der nächste erwartete Nachschub nach hinten verschoben.';
+
+  @override
+  String get traderRestockMakeDue => 'Jetzt fällig machen';
+
+  @override
+  String get traderRestockMakeDueTooltip =>
+      'Die letzte Händleraktivität weit genug zurücksetzen, damit Nachschub jetzt fällig sein sollte.';
+
+  @override
+  String get traderRestockCustom => 'Eigene Zeit…';
+
+  @override
+  String get traderRestockCustomTooltip =>
+      'Spieltag und Uhrzeit der letzten Händleraktivität frei wählen.';
+
+  @override
+  String get traderRestockEditTitle => 'Letzte Händleraktivität ändern';
 
   @override
   String get traderOreHint =>
       'Der Wert im Spiel weicht ab: beim Laden rechnet das Spiel dazu, was seit seinem letzten Handel angefallen ist — er verkauft Überschussware und füllt davon auf. Diese Zahl ist der Ausgangswert, nicht der Betrag im Handelsmenü.';
+
+  @override
+  String get traderOreHintShort =>
+      'Ausgangswert – der Betrag im Handelsmenü kann abweichen.';
+
+  @override
+  String get traderRestockStatusLabel => 'Status';
+
+  @override
+  String get traderRestockStatusNever => 'Keine Aktivität';
+
+  @override
+  String get traderRestockStatusWaiting => 'Warten auf Nachschub';
+
+  @override
+  String get traderRestockStatusReady => 'Bereit für Nachschub';
+
+  @override
+  String get traderRestockStatusPossiblyReady => 'Möglicherweise bereit';
+
+  @override
+  String get traderRestockStatusCheckTime => 'Zeitangabe prüfen';
+
+  @override
+  String get traderRestockStatusUnknown => 'Unbekannt';
 
   @override
   String get traderPriceWarning =>

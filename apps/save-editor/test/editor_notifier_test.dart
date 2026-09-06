@@ -140,7 +140,7 @@ void main() {
       );
       expect(scan.payload.containsKey('binaryHost'), isFalse);
       expect(scan.payload, {'path': r'C:\tmp\saves'});
-      expect(notifier.state.profiles.single.displayName, 'Profile 0');
+      expect(notifier.state.profiles.single.displayName, 'Profile 1');
       expect(notifier.state.activeProfile?.profileId, 0);
       expect(notifier.state.selectedSave?.screenshot?.byteLength, 6);
     },
@@ -227,6 +227,33 @@ void main() {
         'customResourcesSettings': 'ResourcesDifficultySettings_Easy',
       });
       expect(custom.activeResourcesLevel(), 'Novice');
+
+      // Older partial Custom profiles can omit Resources while still carrying
+      // another difficulty member. Restock keeps the game's Gothic fallback.
+      final customWithoutResources = await build({
+        'difficultyPreset': 'DifficultyPreset_Custom',
+        'customCombatSettings': 'CombatDifficultySettings_Hard',
+      });
+      expect(customWithoutResources.activeResourcesLevelForRestock(), 'Gothic');
+
+      // A present but unknown Resources class remains explicit and must not
+      // silently pick an interval.
+      final customUnknownResources = await build({
+        'difficultyPreset': 'DifficultyPreset_Custom',
+        'customResourcesSettings': 'ResourcesDifficultySettings_Unknown',
+      });
+      expect(customUnknownResources.activeResourcesLevelForRestock(), isNull);
+
+      // An absent preset can still use a stored Resources level, while an
+      // unknown non-Custom preset may imply an interval the editor cannot know.
+      final noPreset = await build({
+        'customResourcesSettings': 'ResourcesDifficultySettings_Easy',
+      });
+      expect(noPreset.activeResourcesLevelForRestock(), 'Novice');
+      final unknownPreset = await build({
+        'difficultyPreset': 'DifficultyPreset_Modded',
+      });
+      expect(unknownPreset.activeResourcesLevelForRestock(), isNull);
 
       // A non-Custom preset LOCKS the level: a stale/disagreeing stored Resources
       // class is ignored (Hard preset + stale '_Standard' resources → 'Hard', NOT

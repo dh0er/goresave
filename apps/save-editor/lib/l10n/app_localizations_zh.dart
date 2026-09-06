@@ -434,17 +434,149 @@ class AppLocalizationsZh extends AppLocalizations {
   String get traderNoOre => '无矿石';
 
   @override
-  String get traderStockCurrent => '库存';
+  String get traderStockCurrent => '已保存库存';
 
   @override
-  String get traderStockBase => '补货基准';
+  String get traderStockCurrentTooltip => '目前为该商人保存的库存。游戏下次更新商人时，添加的物品可能会消失。';
 
   @override
-  String get traderStockBaseHint => '商人补货的基准。会随剧情推进而增长，因此不是初始状态。';
+  String get traderStockBase => '参考库存';
+
+  @override
+  String get traderStockBaseTooltip =>
+      '这是已保存的库存副本，游戏可按该商人的规则更改或重新生成。这里只读显示，添加的物品不会永久保留。';
+
+  @override
+  String get traderStockBaseHint => '只读。此库存会随剧情推进而增加，也可能按商人规则被替换。它不是游戏最初的库存。';
+
+  @override
+  String get traderCurrentStockWarning => '商人库存的更改只会保留到下次补货。';
+
+  @override
+  String get traderRestockTitle => '预计补货时间';
+
+  @override
+  String get traderRestockTitleTooltip => '根据商人的上次活动、游戏时间和资源难度估算。';
+
+  @override
+  String get traderRestockPending => '待处理';
+
+  @override
+  String get traderRestockRevertTooltip => '撤销尚未保存的上次活动更改';
+
+  @override
+  String get traderRestockNever => '从未';
+
+  @override
+  String get traderRestockUnavailable => '不可用';
+
+  @override
+  String get traderRestockIntervalUnknown => '游戏天数未知';
+
+  @override
+  String get traderRestockNeverStatus => '尚未记录该商人的活动。';
+
+  @override
+  String get traderRestockClockAhead => '商人的上次活动晚于当前游戏时间。';
+
+  @override
+  String traderRestockNotDueYet(String time) {
+    return '预计不会早于 $time。';
+  }
+
+  @override
+  String get traderRestockPossiblyDue => '估算：库存可能已经可以更新。';
+
+  @override
+  String get traderRestockEligible => '估算：现在应该补货。';
+
+  @override
+  String get traderRestockNoWorldTime => '当前游戏时间不可用，因此无法估算补货时间。';
+
+  @override
+  String get traderRestockLastActivity => '上次商人活动';
+
+  @override
+  String get traderRestockLastActivityTooltip =>
+      '此保存时间可能会在交易后或游戏更新库存时改变。它不一定就是上次补货的时间。';
+
+  @override
+  String get traderRestockForecastWindow => '预计时间';
+
+  @override
+  String get traderRestockForecastWindowTooltip =>
+      '显示最早和最晚可能补货的时间。存档中没有游戏的确切规则，因此这只是估算。';
+
+  @override
+  String get traderRestockIntervalLabel => '两次补货之间的天数';
+
+  @override
+  String traderRestockInterval(int days, String level) {
+    return '$days 天 · $level';
+  }
+
+  @override
+  String get traderRestockIntervalTooltip =>
+      '按资源难度计算：新手 2 天、Gothic 3 天、困难 5 个游戏日。';
+
+  @override
+  String get traderRestockAutomationLabel => '自动补货';
+
+  @override
+  String get traderRestockAutomationValue => '无法在存档中禁用';
+
+  @override
+  String get traderRestockAutomationTooltip => '无法在存档中关闭自动补货。只有模组能改变这项游戏规则。';
+
+  @override
+  String get traderRestockSetNow => '设为游戏时间';
+
+  @override
+  String get traderRestockSetNowTooltip =>
+      '将当前游戏时间（包括尚未保存的更改）设为商人的上次活动。这会推迟预计补货时间。';
+
+  @override
+  String get traderRestockMakeDue => '准备补货';
+
+  @override
+  String get traderRestockMakeDueTooltip => '将上次活动向过去调整，使其达到预计补货时间。';
+
+  @override
+  String get traderRestockCustom => '自定义时间…';
+
+  @override
+  String get traderRestockCustomTooltip => '为商人的上次活动选择游戏内日期和时间。';
+
+  @override
+  String get traderRestockEditTitle => '商人的上次活动';
 
   @override
   String get traderOreHint =>
       '游戏内的数值会不同：载入时游戏会加上自他上次交易以来累积的部分——他会卖掉多余货物并以此补货。这个数字是起点，而非交易界面显示的金额。';
+
+  @override
+  String get traderOreHintShort => '初始值——可能与交易界面中的金额不同。';
+
+  @override
+  String get traderRestockStatusLabel => '状态';
+
+  @override
+  String get traderRestockStatusNever => '无活动';
+
+  @override
+  String get traderRestockStatusWaiting => '等待补货';
+
+  @override
+  String get traderRestockStatusReady => '可以补货';
+
+  @override
+  String get traderRestockStatusPossiblyReady => '可能可以补货';
+
+  @override
+  String get traderRestockStatusCheckTime => '检查保存时间';
+
+  @override
+  String get traderRestockStatusUnknown => '未知';
 
   @override
   String get traderPriceWarning => '价格会随商人的库存量和持有矿石而变化，因此修改这些数字也可能改变他的开价。';
@@ -479,7 +611,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String traderStockLineCount(int count) {
-    return '$count 条';
+    return '$count 件商品';
   }
 
   @override
@@ -3407,17 +3539,149 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get traderNoOre => '无矿石';
 
   @override
-  String get traderStockCurrent => '库存';
+  String get traderStockCurrent => '已保存库存';
 
   @override
-  String get traderStockBase => '补货基准';
+  String get traderStockCurrentTooltip => '目前为该商人保存的库存。游戏下次更新商人时，添加的物品可能会消失。';
 
   @override
-  String get traderStockBaseHint => '商人补货的基准。会随剧情推进而增长，因此不是初始状态。';
+  String get traderStockBase => '参考库存';
+
+  @override
+  String get traderStockBaseTooltip =>
+      '这是已保存的库存副本，游戏可按该商人的规则更改或重新生成。这里只读显示，添加的物品不会永久保留。';
+
+  @override
+  String get traderStockBaseHint => '只读。此库存会随剧情推进而增加，也可能按商人规则被替换。它不是游戏最初的库存。';
+
+  @override
+  String get traderCurrentStockWarning => '商人库存的更改只会保留到下次补货。';
+
+  @override
+  String get traderRestockTitle => '预计补货时间';
+
+  @override
+  String get traderRestockTitleTooltip => '根据商人的上次活动、游戏时间和资源难度估算。';
+
+  @override
+  String get traderRestockPending => '待处理';
+
+  @override
+  String get traderRestockRevertTooltip => '撤销尚未保存的上次活动更改';
+
+  @override
+  String get traderRestockNever => '从未';
+
+  @override
+  String get traderRestockUnavailable => '不可用';
+
+  @override
+  String get traderRestockIntervalUnknown => '游戏天数未知';
+
+  @override
+  String get traderRestockNeverStatus => '尚未记录该商人的活动。';
+
+  @override
+  String get traderRestockClockAhead => '商人的上次活动晚于当前游戏时间。';
+
+  @override
+  String traderRestockNotDueYet(String time) {
+    return '预计不会早于 $time。';
+  }
+
+  @override
+  String get traderRestockPossiblyDue => '估算：库存可能已经可以更新。';
+
+  @override
+  String get traderRestockEligible => '估算：现在应该补货。';
+
+  @override
+  String get traderRestockNoWorldTime => '当前游戏时间不可用，因此无法估算补货时间。';
+
+  @override
+  String get traderRestockLastActivity => '上次商人活动';
+
+  @override
+  String get traderRestockLastActivityTooltip =>
+      '此保存时间可能会在交易后或游戏更新库存时改变。它不一定就是上次补货的时间。';
+
+  @override
+  String get traderRestockForecastWindow => '预计时间';
+
+  @override
+  String get traderRestockForecastWindowTooltip =>
+      '显示最早和最晚可能补货的时间。存档中没有游戏的确切规则，因此这只是估算。';
+
+  @override
+  String get traderRestockIntervalLabel => '两次补货之间的天数';
+
+  @override
+  String traderRestockInterval(int days, String level) {
+    return '$days 天 · $level';
+  }
+
+  @override
+  String get traderRestockIntervalTooltip =>
+      '按资源难度计算：新手 2 天、Gothic 3 天、困难 5 个游戏日。';
+
+  @override
+  String get traderRestockAutomationLabel => '自动补货';
+
+  @override
+  String get traderRestockAutomationValue => '无法在存档中禁用';
+
+  @override
+  String get traderRestockAutomationTooltip => '无法在存档中关闭自动补货。只有模组能改变这项游戏规则。';
+
+  @override
+  String get traderRestockSetNow => '设为游戏时间';
+
+  @override
+  String get traderRestockSetNowTooltip =>
+      '将当前游戏时间（包括尚未保存的更改）设为商人的上次活动。这会推迟预计补货时间。';
+
+  @override
+  String get traderRestockMakeDue => '准备补货';
+
+  @override
+  String get traderRestockMakeDueTooltip => '将上次活动向过去调整，使其达到预计补货时间。';
+
+  @override
+  String get traderRestockCustom => '自定义时间…';
+
+  @override
+  String get traderRestockCustomTooltip => '为商人的上次活动选择游戏内日期和时间。';
+
+  @override
+  String get traderRestockEditTitle => '商人的上次活动';
 
   @override
   String get traderOreHint =>
       '游戏内的数值会不同：载入时游戏会加上自他上次交易以来累积的部分——他会卖掉多余货物并以此补货。这个数字是起点，而非交易界面显示的金额。';
+
+  @override
+  String get traderOreHintShort => '初始值——可能与交易界面中的金额不同。';
+
+  @override
+  String get traderRestockStatusLabel => '状态';
+
+  @override
+  String get traderRestockStatusNever => '无活动';
+
+  @override
+  String get traderRestockStatusWaiting => '等待补货';
+
+  @override
+  String get traderRestockStatusReady => '可以补货';
+
+  @override
+  String get traderRestockStatusPossiblyReady => '可能可以补货';
+
+  @override
+  String get traderRestockStatusCheckTime => '检查保存时间';
+
+  @override
+  String get traderRestockStatusUnknown => '未知';
 
   @override
   String get traderPriceWarning => '价格会随商人的库存量和持有矿石而变化，因此修改这些数字也可能改变他的开价。';
@@ -3452,7 +3716,7 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
 
   @override
   String traderStockLineCount(int count) {
-    return '$count 条';
+    return '$count 件商品';
   }
 
   @override

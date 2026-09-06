@@ -902,6 +902,15 @@ class EditorNotifier extends StateNotifier<EditorState> {
   /// without reaching into the protected `state`.
   PendingSaveEdit? pendingEditFor(String key) => state.pendingEdits[key];
 
+  /// Unsaved world-clock value, when the Overview clock is being edited.
+  /// Trader "set to world time" actions use this instead of the stale on-disk
+  /// clock so both edits agree when saved together.
+  double? pendingGameTimeSeconds() {
+    final value = state.pendingEdits['gameTime']?.edits.firstOrNull?['value'];
+    final seconds = value is Map ? value['value'] : null;
+    return seconds is num ? seconds.toDouble() : null;
+  }
+
   /// The effective Resources difficulty level for the INSPECTED save, normalized
   /// to 'Novice' | 'Gothic' | 'Hard' — used to pick the inventory-reset
   /// start-save. Falls back to 'Gothic' when nothing resolves.
@@ -918,10 +927,17 @@ class EditorNotifier extends StateNotifier<EditorState> {
   /// (Novice/Gothic/Hard) LOCKS every sub-level to its implied tier, so a stale
   /// or disagreeing stored Resources class is ignored — a Hard profile always
   /// resets from the Hard save even if it carries an out-of-date `_Standard`
-  /// resources class. Only a Custom preset — or a profile with no recognized
-  /// preset to imply from — lets the stored Resources sub-level decide (else
-  /// Gothic).
-  String activeResourcesLevel() {
+  /// resources class. Only a Custom preset — or a profile with no preset — lets
+  /// the stored Resources sub-level decide (else Gothic).
+  String activeResourcesLevel() => activeResourcesLevelForRestock() ?? 'Gothic';
+
+  /// Resources level for merchant timing. Unlike [activeResourcesLevel], this
+  /// refuses an unrecognised future/modded difficulty instead of inventing a
+  /// Gothic interval for a countdown the game may not use.
+  ///
+  /// A save with no difficulty data at all still means the shipped default,
+  /// Gothic. Only a present-but-unrecognised setting is unknown.
+  String? activeResourcesLevelForRestock() {
     const known = {'Novice', 'Gothic', 'Hard'};
     // A directory profile's difficulty by id, only when it carries values.
     DifficultySettings? profileDifficulty(int? id) {
@@ -947,17 +963,20 @@ class EditorNotifier extends StateNotifier<EditorState> {
     //    inspected yet).
     difficulty ??= profileDifficulty(state.activeProfileId);
     if (difficulty == null || !difficulty.hasAnyValue) return 'Gothic';
+    final storedResourcesLevel = difficulty.resources == null
+        ? 'Gothic'
+        : known.contains(difficulty.resourcesLabel)
+        ? difficulty.resourcesLabel
+        : null;
     return switch (difficulty.presetLabel) {
       'Novice' => 'Novice',
       'Gothic' => 'Gothic',
       'Hard' => 'Hard',
-      // Custom, or an unrecognized/absent preset: the stored Resources sub-level
-      // is authoritative (a non-Custom preset returned above and locked the
-      // level to its tier).
-      _ =>
-        known.contains(difficulty.resourcesLabel)
-            ? difficulty.resourcesLabel
-            : 'Gothic',
+      // Custom and absent presets let the stored Resources sub-level decide.
+      // An unknown non-Custom preset may imply its own interval, so do not guess.
+      'Custom' => storedResourcesLevel,
+      '-' when difficulty.preset == null => storedResourcesLevel,
+      _ => null,
     };
   }
 
@@ -2243,10 +2262,19 @@ class EditorNotifier extends StateNotifier<EditorState> {
           });
         }
         final rawProfiles = (data?['profiles'] as List?) ?? const [];
-        profiles = rawProfiles
-            .whereType<Map>()
-            .map((m) => ProfileSummary.fromJson(m.cast<String, Object?>()))
-            .toList();
+        profiles =
+            rawProfiles
+                .whereType<Map>()
+                .map((m) => ProfileSummary.fromJson(m.cast<String, Object?>()))
+                .toList()
+              ..sort((left, right) {
+                final displayOrder = left.displayNumber.compareTo(
+                  right.displayNumber,
+                );
+                return displayOrder != 0
+                    ? displayOrder
+                    : left.profileId.compareTo(right.profileId);
+              });
         final profileBySavedSlot = <String, int>{
           for (final profile in profiles)
             for (final slot in profile.savedSlots) slot: profile.profileId,
@@ -2605,8 +2633,13 @@ class EditorNotifier extends StateNotifier<EditorState> {
     }
     final save = state.selectedSave;
     if (save == null) return false;
-    if (!state.profiles.any((profile) => profile.profileId == profileId)) {
-      state = state.copyWith(error: _l10n.editorProfileNotFound(profileId));
+    final targetProfile = state.profiles
+        .where((profile) => profile.profileId == profileId)
+        .firstOrNull;
+    if (targetProfile == null) {
+      state = state.copyWith(
+        error: _l10n.editorProfileNotFound(gameProfileNumber(profileId)),
+      );
       return false;
     }
     if (!save.isExternal && save.persistentProfileId == profileId) return true;
@@ -2666,8 +2699,8 @@ class EditorNotifier extends StateNotifier<EditorState> {
       failureMessage: (details) => _l10n.editorProfileAssignmentFailed(details),
       message: (data) {
         final assigned = save.isExternal
-            ? _l10n.editorSaveImportedAssigned(profileId)
-            : _l10n.editorSaveAssigned(profileId);
+            ? _l10n.editorSaveImportedAssigned(targetProfile.displayNumber)
+            : _l10n.editorSaveAssigned(targetProfile.displayNumber);
         // An import copies the save's undo notes across after the bytes land.
         // If that failed, the imported save can hold a pinned NPC with no
         // record of the routine the pin replaced.
@@ -2714,7 +2747,9 @@ class EditorNotifier extends StateNotifier<EditorState> {
         .where((candidate) => candidate.profileId == profileId)
         .firstOrNull;
     if (profile == null) {
-      state = state.copyWith(error: _l10n.editorProfileNotFound(profileId));
+      state = state.copyWith(
+        error: _l10n.editorProfileNotFound(gameProfileNumber(profileId)),
+      );
       return false;
     }
     final save = state.saves
@@ -2726,7 +2761,7 @@ class EditorNotifier extends StateNotifier<EditorState> {
         .firstOrNull;
     if (!profile.savedSlots.contains(slot) && save == null) {
       state = state.copyWith(
-        error: _l10n.editorSaveSlotNotAssigned(slot, profileId),
+        error: _l10n.editorSaveSlotNotAssigned(slot, profile.displayNumber),
       );
       return false;
     }
@@ -2788,7 +2823,9 @@ class EditorNotifier extends StateNotifier<EditorState> {
         .where((candidate) => candidate.profileId == profileId)
         .firstOrNull;
     if (profile == null) {
-      state = state.copyWith(error: _l10n.editorProfileNotFound(profileId));
+      state = state.copyWith(
+        error: _l10n.editorProfileNotFound(gameProfileNumber(profileId)),
+      );
       return false;
     }
     final save = state.saves
@@ -2802,7 +2839,7 @@ class EditorNotifier extends StateNotifier<EditorState> {
         .firstOrNull;
     if (save == null || !profile.savedSlots.contains(slot)) {
       state = state.copyWith(
-        error: _l10n.editorSaveSlotNotAssigned(slot, profileId),
+        error: _l10n.editorSaveSlotNotAssigned(slot, profile.displayNumber),
       );
       return false;
     }
@@ -3460,6 +3497,14 @@ class EditorNotifier extends StateNotifier<EditorState> {
 
   /// Drop a queued trader change (the user reverted the field).
   void clearTraderStockEdit(TraderStockEdit edit) =>
+      clearPendingEdit(edit.pendingKey);
+
+  /// Queue or clear the fixed-size activity timestamp of one merchant.
+  void setTraderActivityTimeEdit(TraderActivityTimeEdit edit) {
+    setPendingEdit(edit.pendingKey, PendingSaveEdit(edits: [edit.toEdit()]));
+  }
+
+  void clearTraderActivityTimeEdit(TraderActivityTimeEdit edit) =>
       clearPendingEdit(edit.pendingKey);
 
   /// Run one progression section query. Returns the raw data map, or null

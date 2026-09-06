@@ -32,7 +32,7 @@ game install. For modding, use the [`gore` CLI](../../docs/guide/README.md) or
   their individual text entries and NPC discovery states.
 - Progression: Edit quest markers, NPC knowledge and events
 - Trade: See what a merchant sells and how much ore he has to buy with; change
-  stock counts, add or remove lines, and edit the restock baseline.
+  stock counts, add or remove lines, and adjust the merchant's restock timing.
 - Almost all data can be changed by changing the value of the internal property. Only for experimental use.
 - Backups: Create them automatically, give them optional display labels,
   restore them, or permanently delete them after confirmation. Deletion cannot
