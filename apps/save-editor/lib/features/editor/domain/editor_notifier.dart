@@ -927,9 +927,8 @@ class EditorNotifier extends StateNotifier<EditorState> {
   /// (Novice/Gothic/Hard) LOCKS every sub-level to its implied tier, so a stale
   /// or disagreeing stored Resources class is ignored — a Hard profile always
   /// resets from the Hard save even if it carries an out-of-date `_Standard`
-  /// resources class. Only a Custom preset — or a profile with no recognized
-  /// preset to imply from — lets the stored Resources sub-level decide (else
-  /// Gothic).
+  /// resources class. Only a Custom preset — or a profile with no preset — lets
+  /// the stored Resources sub-level decide (else Gothic).
   String activeResourcesLevel() => activeResourcesLevelForRestock() ?? 'Gothic';
 
   /// Resources level for merchant timing. Unlike [activeResourcesLevel], this
@@ -964,19 +963,20 @@ class EditorNotifier extends StateNotifier<EditorState> {
     //    inspected yet).
     difficulty ??= profileDifficulty(state.activeProfileId);
     if (difficulty == null || !difficulty.hasAnyValue) return 'Gothic';
+    final storedResourcesLevel = difficulty.resources == null
+        ? 'Gothic'
+        : known.contains(difficulty.resourcesLabel)
+        ? difficulty.resourcesLabel
+        : null;
     return switch (difficulty.presetLabel) {
       'Novice' => 'Novice',
       'Gothic' => 'Gothic',
       'Hard' => 'Hard',
-      // Custom, or an unrecognized/absent preset: the stored Resources sub-level
-      // is authoritative (a non-Custom preset returned above and locked the
-      // level to its tier).
-      _ =>
-        difficulty.resources == null
-            ? 'Gothic'
-            : known.contains(difficulty.resourcesLabel)
-            ? difficulty.resourcesLabel
-            : null,
+      // Custom and absent presets let the stored Resources sub-level decide.
+      // An unknown non-Custom preset may imply its own interval, so do not guess.
+      'Custom' => storedResourcesLevel,
+      '-' when difficulty.preset == null => storedResourcesLevel,
+      _ => null,
     };
   }
 

@@ -244,6 +244,17 @@ void main() {
       });
       expect(customUnknownResources.activeResourcesLevelForRestock(), isNull);
 
+      // An absent preset can still use a stored Resources level, while an
+      // unknown non-Custom preset may imply an interval the editor cannot know.
+      final noPreset = await build({
+        'customResourcesSettings': 'ResourcesDifficultySettings_Easy',
+      });
+      expect(noPreset.activeResourcesLevelForRestock(), 'Novice');
+      final unknownPreset = await build({
+        'difficultyPreset': 'DifficultyPreset_Modded',
+      });
+      expect(unknownPreset.activeResourcesLevelForRestock(), isNull);
+
       // A non-Custom preset LOCKS the level: a stale/disagreeing stored Resources
       // class is ignored (Hard preset + stale '_Standard' resources → 'Hard', NOT
       // 'Gothic'). Only Custom profiles let the sub-level override the preset.
