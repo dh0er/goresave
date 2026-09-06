@@ -448,18 +448,164 @@ class AppLocalizationsPt extends AppLocalizations {
   String get traderNoOre => 'sem minério';
 
   @override
-  String get traderStockCurrent => 'Estoque';
+  String get traderStockCurrent => 'Estoque guardado';
 
   @override
-  String get traderStockBase => 'Base de reposição';
+  String get traderStockCurrentTooltip =>
+      'O estoque atualmente guardado para este mercador. Os itens adicionados podem desaparecer quando o jogo voltar a atualizar o mercador.';
+
+  @override
+  String get traderStockBase => 'Estoque de referência';
+
+  @override
+  String get traderStockBaseTooltip =>
+      'Uma cópia guardada que o jogo pode alterar ou recriar segundo as regras deste mercador. É apenas de leitura e não guarda os itens adicionados de forma permanente.';
 
   @override
   String get traderStockBaseHint =>
-      'Aquilo que o mercador repõe. Cresce com o progresso da história, por isso não é um estado original.';
+      'Apenas leitura. Este estoque guardado cresce com a história e pode ser substituído segundo as regras do mercador. Não é o estoque original do jogo.';
+
+  @override
+  String get traderCurrentStockWarning =>
+      'As alterações ao inventário do mercador duram apenas até à próxima reposição.';
+
+  @override
+  String get traderRestockTitle => 'Reposição estimada';
+
+  @override
+  String get traderRestockTitleTooltip =>
+      'Estimativa baseada na última atividade do mercador, na hora do jogo e na dificuldade de Recursos.';
+
+  @override
+  String get traderRestockPending => 'pendente';
+
+  @override
+  String get traderRestockRevertTooltip =>
+      'Anular a alteração não guardada da última atividade';
+
+  @override
+  String get traderRestockNever => 'Nunca';
+
+  @override
+  String get traderRestockUnavailable => 'Indisponível';
+
+  @override
+  String get traderRestockIntervalUnknown =>
+      'Número de dias de jogo desconhecido';
+
+  @override
+  String get traderRestockNeverStatus =>
+      'Ainda não foi registada qualquer atividade deste mercador.';
+
+  @override
+  String get traderRestockClockAhead =>
+      'A última atividade do mercador é posterior à hora atual do jogo.';
+
+  @override
+  String traderRestockNotDueYet(String time) {
+    return 'Não previsto antes de $time.';
+  }
+
+  @override
+  String get traderRestockPossiblyDue =>
+      'Estimativa: o estoque pode já estar pronto para ser atualizado.';
+
+  @override
+  String get traderRestockEligible => 'Estimativa: a reposição já é esperada.';
+
+  @override
+  String get traderRestockNoWorldTime =>
+      'A hora atual do jogo não está disponível, por isso não é possível fazer uma estimativa.';
+
+  @override
+  String get traderRestockLastActivity => 'Última atividade do mercador';
+
+  @override
+  String get traderRestockLastActivityTooltip =>
+      'Esta hora guardada pode mudar depois de uma troca ou quando o jogo atualiza o estoque. Não indica necessariamente a última reposição.';
+
+  @override
+  String get traderRestockForecastWindow => 'Período estimado';
+
+  @override
+  String get traderRestockForecastWindowTooltip =>
+      'Mostra a hora mais próxima e a mais distante em que a reposição parece provável. As regras exatas do jogo não estão no jogo guardado, por isso é apenas uma estimativa.';
+
+  @override
+  String get traderRestockIntervalLabel => 'Dias entre reposições';
+
+  @override
+  String traderRestockInterval(int days, String level) {
+    return '$days dias · $level';
+  }
+
+  @override
+  String get traderRestockIntervalTooltip =>
+      'Conforme a dificuldade de Recursos: Novato 2, Gothic 3 e Difícil 5 dias de jogo.';
+
+  @override
+  String get traderRestockAutomationLabel => 'Reposição automática';
+
+  @override
+  String get traderRestockAutomationValue =>
+      'Não pode ser desativada no jogo guardado';
+
+  @override
+  String get traderRestockAutomationTooltip =>
+      'A reposição automática não pode ser desativada num jogo guardado. Só um mod pode alterar esta regra do jogo.';
+
+  @override
+  String get traderRestockSetNow => 'Definir para a hora do jogo';
+
+  @override
+  String get traderRestockSetNowTooltip =>
+      'Usar a hora atual do jogo, incluindo uma alteração não guardada, como última atividade do mercador. Isto adia a próxima reposição estimada.';
+
+  @override
+  String get traderRestockMakeDue => 'Preparar a reposição';
+
+  @override
+  String get traderRestockMakeDueTooltip =>
+      'Recuar a última atividade o suficiente para que a reposição seja esperada.';
+
+  @override
+  String get traderRestockCustom => 'Hora personalizada…';
+
+  @override
+  String get traderRestockCustomTooltip =>
+      'Escolher o dia e a hora no jogo da última atividade do mercador.';
+
+  @override
+  String get traderRestockEditTitle => 'Última atividade do mercador';
 
   @override
   String get traderOreHint =>
       'O valor no jogo difere: ao carregar, o jogo soma o que se acumulou desde a última troca — ele vende excedentes e repõe com isso. Este número é o ponto de partida, não o que o ecrã de comércio mostra.';
+
+  @override
+  String get traderOreHintShort =>
+      'Valor inicial — o montante no ecrã de comércio pode ser diferente.';
+
+  @override
+  String get traderRestockStatusLabel => 'Estado';
+
+  @override
+  String get traderRestockStatusNever => 'Sem atividade';
+
+  @override
+  String get traderRestockStatusWaiting => 'A aguardar reposição';
+
+  @override
+  String get traderRestockStatusReady => 'Pronto para reposição';
+
+  @override
+  String get traderRestockStatusPossiblyReady => 'Talvez pronto';
+
+  @override
+  String get traderRestockStatusCheckTime => 'Verificar hora guardada';
+
+  @override
+  String get traderRestockStatusUnknown => 'Desconhecido';
 
   @override
   String get traderPriceWarning =>
@@ -496,7 +642,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String traderStockLineCount(int count) {
-    return '$count linhas';
+    return '$count itens';
   }
 
   @override
@@ -3551,18 +3697,164 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get traderNoOre => 'sem minério';
 
   @override
-  String get traderStockCurrent => 'Estoque';
+  String get traderStockCurrent => 'Estoque salvo';
 
   @override
-  String get traderStockBase => 'Base de reposição';
+  String get traderStockCurrentTooltip =>
+      'O estoque salvo atualmente para este mercador. Os itens adicionados podem desaparecer quando o jogo atualizar o mercador novamente.';
+
+  @override
+  String get traderStockBase => 'Estoque de referência';
+
+  @override
+  String get traderStockBaseTooltip =>
+      'Uma cópia salva que o jogo pode alterar ou recriar conforme as regras deste mercador. É somente leitura e não guarda os itens adicionados de forma permanente.';
 
   @override
   String get traderStockBaseHint =>
-      'Aquilo que o mercador repõe. Cresce com o progresso da história, por isso não é um estado original.';
+      'Somente leitura. Este estoque salvo aumenta com a história e pode ser substituído conforme as regras do mercador. Não é o estoque original do jogo.';
+
+  @override
+  String get traderCurrentStockWarning =>
+      'As alterações no inventário do mercador duram apenas até a próxima reposição.';
+
+  @override
+  String get traderRestockTitle => 'Reposição estimada';
+
+  @override
+  String get traderRestockTitleTooltip =>
+      'Estimativa baseada na última atividade do mercador, no horário do jogo e na dificuldade de Recursos.';
+
+  @override
+  String get traderRestockPending => 'pendente';
+
+  @override
+  String get traderRestockRevertTooltip =>
+      'Desfazer a alteração não salva da última atividade';
+
+  @override
+  String get traderRestockNever => 'Nunca';
+
+  @override
+  String get traderRestockUnavailable => 'Indisponível';
+
+  @override
+  String get traderRestockIntervalUnknown =>
+      'Número de dias no jogo desconhecido';
+
+  @override
+  String get traderRestockNeverStatus =>
+      'Ainda não foi registrada nenhuma atividade deste mercador.';
+
+  @override
+  String get traderRestockClockAhead =>
+      'A última atividade do mercador está depois do horário atual do jogo.';
+
+  @override
+  String traderRestockNotDueYet(String time) {
+    return 'Não previsto antes de $time.';
+  }
+
+  @override
+  String get traderRestockPossiblyDue =>
+      'Estimativa: o estoque talvez já esteja pronto para ser atualizado.';
+
+  @override
+  String get traderRestockEligible => 'Estimativa: a reposição já é esperada.';
+
+  @override
+  String get traderRestockNoWorldTime =>
+      'O horário atual do jogo não está disponível, por isso não é possível fazer uma estimativa.';
+
+  @override
+  String get traderRestockLastActivity => 'Última atividade do mercador';
+
+  @override
+  String get traderRestockLastActivityTooltip =>
+      'Este horário salvo pode mudar depois de uma troca ou quando o jogo atualiza o estoque. Ele não indica necessariamente a última reposição.';
+
+  @override
+  String get traderRestockForecastWindow => 'Período estimado';
+
+  @override
+  String get traderRestockForecastWindowTooltip =>
+      'Mostra o horário mais próximo e o mais distante em que a reposição parece provável. As regras exatas do jogo não estão no jogo salvo, por isso é apenas uma estimativa.';
+
+  @override
+  String get traderRestockIntervalLabel => 'Dias entre reposições';
+
+  @override
+  String traderRestockInterval(int days, String level) {
+    return '$days dias · $level';
+  }
+
+  @override
+  String get traderRestockIntervalTooltip =>
+      'Conforme a dificuldade de Recursos: Novato 2, Gothic 3 e Difícil 5 dias no jogo.';
+
+  @override
+  String get traderRestockAutomationLabel => 'Reposição automática';
+
+  @override
+  String get traderRestockAutomationValue =>
+      'Não pode ser desativada no jogo salvo';
+
+  @override
+  String get traderRestockAutomationTooltip =>
+      'A reposição automática não pode ser desativada em um jogo salvo. Só um mod pode mudar essa regra do jogo.';
+
+  @override
+  String get traderRestockSetNow => 'Definir para o horário do jogo';
+
+  @override
+  String get traderRestockSetNowTooltip =>
+      'Usar o horário atual do jogo, incluindo uma alteração não salva, como última atividade do mercador. Isso adia a próxima reposição estimada.';
+
+  @override
+  String get traderRestockMakeDue => 'Preparar a reposição';
+
+  @override
+  String get traderRestockMakeDueTooltip =>
+      'Recuar a última atividade o suficiente para que a reposição seja esperada.';
+
+  @override
+  String get traderRestockCustom => 'Horário personalizado…';
+
+  @override
+  String get traderRestockCustomTooltip =>
+      'Escolher o dia e o horário no jogo da última atividade do mercador.';
+
+  @override
+  String get traderRestockEditTitle => 'Última atividade do mercador';
 
   @override
   String get traderOreHint =>
       'O valor no jogo difere: ao carregar, o jogo soma o que se acumulou desde a última troca — ele vende excedentes e repõe com isso. Este número é o ponto de partida, não o que a tela de comércio mostra.';
+
+  @override
+  String get traderOreHintShort =>
+      'Valor inicial — o valor na tela de comércio pode ser diferente.';
+
+  @override
+  String get traderRestockStatusLabel => 'Status';
+
+  @override
+  String get traderRestockStatusNever => 'Sem atividade';
+
+  @override
+  String get traderRestockStatusWaiting => 'Aguardando reposição';
+
+  @override
+  String get traderRestockStatusReady => 'Pronto para reposição';
+
+  @override
+  String get traderRestockStatusPossiblyReady => 'Talvez pronto';
+
+  @override
+  String get traderRestockStatusCheckTime => 'Verificar horário salvo';
+
+  @override
+  String get traderRestockStatusUnknown => 'Desconhecido';
 
   @override
   String get traderPriceWarning =>
@@ -3599,7 +3891,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String traderStockLineCount(int count) {
-    return '$count linhas';
+    return '$count itens';
   }
 
   @override

@@ -451,15 +451,162 @@ class AppLocalizationsEs extends AppLocalizations {
   String get traderStockCurrent => 'Existencias';
 
   @override
+  String get traderStockCurrentTooltip =>
+      'Lo que vende actualmente este mercader. Los objetos añadidos pueden desaparecer cuando el juego actualice al mercader.';
+
+  @override
   String get traderStockBase => 'Base de reposición';
 
   @override
+  String get traderStockBaseTooltip =>
+      'La partida contiene esta lista para ayudar al juego a reponer al mercader. El juego puede volver a calcularla con sus reglas, por lo que los cambios no serían permanentes.';
+
+  @override
   String get traderStockBaseHint =>
-      'Aquello a lo que el mercader repone. Crece con el progreso de la historia, así que no es un estado original.';
+      'Solo lectura: el juego usa esta lista al reponer, pero puede volver a calcularla. Los objetos añadidos aquí no permanecerían.';
+
+  @override
+  String get traderCurrentStockWarning =>
+      'Los cambios en el inventario del mercader solo duran hasta la próxima reposición.';
+
+  @override
+  String get traderRestockTitle => 'Temporizador de reposición';
+
+  @override
+  String get traderRestockTitleTooltip =>
+      'Estimación basada en la última actividad del mercader, el tiempo actual de juego y la dificultad de Recursos.';
+
+  @override
+  String get traderRestockPending => 'pendiente';
+
+  @override
+  String get traderRestockRevertTooltip =>
+      'Deshacer el cambio de tiempo pendiente';
+
+  @override
+  String get traderRestockNever => 'Nunca';
+
+  @override
+  String get traderRestockUnavailable => 'No disponible';
+
+  @override
+  String get traderRestockIntervalUnknown => 'Espera de reposición desconocida';
+
+  @override
+  String get traderRestockNeverStatus =>
+      'Todavía no se ha registrado actividad para este mercader.';
+
+  @override
+  String get traderRestockClockAhead =>
+      'La hora guardada del mercader está adelantada respecto al tiempo actual de juego.';
+
+  @override
+  String traderRestockNotDueYet(String time) {
+    return 'No se espera antes de $time.';
+  }
+
+  @override
+  String get traderRestockPossiblyDue =>
+      'Es posible que el mercader ya esté listo para reponer.';
+
+  @override
+  String get traderRestockEligible =>
+      'El mercader ya debería estar listo para reponer.';
+
+  @override
+  String get traderRestockNoWorldTime =>
+      'Falta el tiempo actual de juego, por lo que no se puede saber si toca reponer.';
+
+  @override
+  String get traderRestockLastActivity => 'Última actividad del mercader';
+
+  @override
+  String get traderRestockLastActivityTooltip =>
+      'La última hora guardada para este mercader. Puede venir de un intercambio u otra actualización, por lo que no tiene que ser la última reposición.';
+
+  @override
+  String get traderRestockForecastWindow => 'Reposición prevista';
+
+  @override
+  String get traderRestockForecastWindowTooltip =>
+      'La hora exacta no se guarda en la partida. Por eso el editor muestra un intervalo entre la hora más temprana y la más tardía previstas.';
+
+  @override
+  String get traderRestockIntervalLabel => 'Tiempo de espera';
+
+  @override
+  String traderRestockInterval(int days, String level) {
+    return '$days días · $level';
+  }
+
+  @override
+  String get traderRestockIntervalTooltip =>
+      'Espera según la dificultad de Recursos: Novato 2, Gothic 3 y Difícil 5 días de juego.';
+
+  @override
+  String get traderRestockAutomationLabel => 'Reposición automática';
+
+  @override
+  String get traderRestockAutomationValue =>
+      'No se puede desactivar en la partida';
+
+  @override
+  String get traderRestockAutomationTooltip =>
+      'El editor no puede detener de forma fiable la reposición automática. Para eso hace falta un mod del juego.';
+
+  @override
+  String get traderRestockSetNow => 'Usar tiempo del mundo';
+
+  @override
+  String get traderRestockSetNowTooltip =>
+      'Usar el tiempo actual de juego como última actividad del mercader. Retrasa la siguiente reposición prevista.';
+
+  @override
+  String get traderRestockMakeDue => 'Hacerlo vencer ahora';
+
+  @override
+  String get traderRestockMakeDueTooltip =>
+      'Mover la última actividad lo bastante atrás para que la reposición ya deba tocar.';
+
+  @override
+  String get traderRestockCustom => 'Tiempo personalizado…';
+
+  @override
+  String get traderRestockCustomTooltip =>
+      'Elegir libremente el día y la hora de la última actividad del mercader.';
+
+  @override
+  String get traderRestockEditTitle =>
+      'Cambiar la última actividad del mercader';
 
   @override
   String get traderOreHint =>
       'La cifra en el juego difiere: al cargar, el juego suma lo acumulado desde su último intercambio — vende excedentes y repone con ello. Este número es el punto de partida, no lo que muestra la pantalla de comercio.';
+
+  @override
+  String get traderOreHintShort =>
+      'Valor inicial; la cantidad en la pantalla de comercio puede variar.';
+
+  @override
+  String get traderRestockStatusLabel => 'Estado';
+
+  @override
+  String get traderRestockStatusNever => 'Sin actividad';
+
+  @override
+  String get traderRestockStatusWaiting => 'Esperando reposición';
+
+  @override
+  String get traderRestockStatusReady => 'Listo para reponer';
+
+  @override
+  String get traderRestockStatusPossiblyReady => 'Quizá esté listo';
+
+  @override
+  String get traderRestockStatusCheckTime => 'Revisar la hora guardada';
+
+  @override
+  String get traderRestockStatusUnknown => 'Desconocido';
 
   @override
   String get traderPriceWarning =>

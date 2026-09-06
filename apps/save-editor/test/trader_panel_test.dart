@@ -5,6 +5,7 @@ import 'package:goresave/features/app/ui/goresave_app.dart';
 import 'package:goresave/features/app/domain/ui_settings.dart';
 import 'package:goresave/features/editor/domain/core_service.dart';
 import 'package:goresave/features/editor/domain/editor_settings_store.dart';
+import 'package:goresave/features/editor/domain/game_time.dart';
 import 'package:goresave/features/editor/domain/pending_edits.dart';
 import 'package:goresave/features/editor/domain/trader_models.dart';
 import 'package:goresave/features/editor/ui/character_master_list.dart';
@@ -34,6 +35,27 @@ Map<String, Object?> arrayRemoveOnTraders() => {
 
 void main() {
   group('trader edit encoding', () {
+    test('activity time uses the exact core-provided typed path', () {
+      const path = [
+        'Wrapper',
+        'm_GenericData',
+        '{GameStateDataBase}',
+        'm_Traders',
+        '[11]',
+        'm_TotalSeconds',
+      ];
+      const edit = TraderActivityTimeEdit(
+        index: 11,
+        propertyPath: path,
+        totalSeconds: 12345.5,
+      );
+      expect(edit.pendingKey, 'traders:11:activityTime');
+      expect(edit.toEdit(), {
+        'path': 'private.typed.setValue',
+        'value': {'path': path, 'value': 12345.5},
+      });
+    });
+
     test('setStock sends the map and count, addressed by index', () {
       const edit = TraderStockEdit(
         kind: TraderEditKind.setStock,
@@ -217,6 +239,7 @@ void main() {
       expect(detail.stock(TraderStockMap.base).first.count, 96);
       expect(detail.items.first.isOre, isTrue);
       expect(detail.summary.index, 5);
+      expect(detail.totalSecondsPath, isNull);
     });
 
     test('an uncatalogued class is flagged rather than silently editable', () {
@@ -232,6 +255,88 @@ void main() {
         ],
       });
       expect(detail.items.single.unknownItem, isTrue);
+    });
+  });
+
+  group('trader restock forecast', () {
+    test('known Resources levels map to shipped intervals only', () {
+      expect(traderRestockDays('Novice'), 2);
+      expect(traderRestockDays('Gothic'), 3);
+      expect(traderRestockDays('Hard'), 5);
+      expect(traderRestockDays('Modded'), isNull);
+    });
+
+    test('distinguishes calendar and elapsed forecast boundaries', () {
+      const activity = 22 * secondsPerDay + 21 * secondsPerHour;
+      final before = TraderRestockTiming(
+        activitySeconds: activity.toDouble(),
+        worldSeconds: (25 * secondsPerDay - 1).toDouble(),
+        intervalDays: 3,
+      );
+      expect(before.calendarBoundarySeconds, 25 * secondsPerDay);
+      expect(
+        before.elapsedBoundarySeconds,
+        25 * secondsPerDay + 21 * secondsPerHour,
+      );
+      expect(before.state, TraderRestockForecastState.beforeWindow);
+
+      final uncertain = TraderRestockTiming(
+        activitySeconds: activity.toDouble(),
+        worldSeconds: (25 * secondsPerDay).toDouble(),
+        intervalDays: 3,
+      );
+      expect(uncertain.state, TraderRestockForecastState.boundaryOnly);
+
+      final conservative = TraderRestockTiming(
+        activitySeconds: activity.toDouble(),
+        worldSeconds: (25 * secondsPerDay + 21 * secondsPerHour).toDouble(),
+        intervalDays: 3,
+      );
+      expect(conservative.state, TraderRestockForecastState.eligibleBoth);
+    });
+
+    test('sentinel, future clock and invalid values are explicit states', () {
+      expect(
+        const TraderRestockTiming(
+          activitySeconds: kTraderNeverActiveSeconds,
+          worldSeconds: 500000,
+          intervalDays: 3,
+        ).state,
+        TraderRestockForecastState.neverActive,
+      );
+      expect(
+        const TraderRestockTiming(
+          activitySeconds: 600000,
+          worldSeconds: 500000,
+          intervalDays: 3,
+        ).state,
+        TraderRestockForecastState.clockAhead,
+      );
+      expect(
+        const TraderRestockTiming(
+          activitySeconds: double.nan,
+          worldSeconds: 500000,
+          intervalDays: 3,
+        ).state,
+        TraderRestockForecastState.unavailable,
+      );
+    });
+
+    test('make due is conservative under both interpretations', () {
+      const world = 10 * secondsPerDay + 1234.0;
+      const timing = TraderRestockTiming(
+        activitySeconds: 9,
+        worldSeconds: world,
+        intervalDays: 3,
+      );
+      final moved = timing.makeDueActivitySeconds!;
+      final after = TraderRestockTiming(
+        activitySeconds: moved,
+        worldSeconds: world,
+        intervalDays: 3,
+      );
+      expect(after.state, TraderRestockForecastState.eligibleBoth);
+      expect(after.elapsedBoundarySeconds, lessThan(world));
     });
   });
 
@@ -377,6 +482,255 @@ void main() {
         core.requests.where((r) => r.command == 'private.traders.detail'),
         isEmpty,
       );
+    });
+
+    testWidgets('shows the forecast and queues all timestamp actions safely', (
+      tester,
+    ) async {
+      final core = _TraderCoreService(playerIsTrader: true);
+      await pumpApp(tester, core);
+      await tester.tap(find.widgetWithText(Tab, 'Characters'));
+      await tester.pumpAndSettle();
+      await tester.tap(detailTab('Trade'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Restock timer'), findsOneWidget);
+      expect(find.text('Last merchant activity'), findsOneWidget);
+      expect(find.textContaining('Day 13 · 00:00:00'), findsWidgets);
+      expect(
+        find.byTooltip('Not expected before Day 13 · 00:00:00.'),
+        findsNothing,
+      );
+      expect(find.text('Status'), findsOneWidget);
+      expect(find.text('Waiting for restock'), findsOneWidget);
+      final restockCard = tester.getRect(
+        find.byKey(const ValueKey('trader-restock-card')),
+      );
+      final statusRow = tester.getRect(
+        find.byKey(const ValueKey('trader-restock-status')),
+      );
+      final statusValue = tester.getRect(find.text('Waiting for restock'));
+      final firstFact = tester.getRect(find.text('Last merchant activity'));
+      final customButton = tester.getRect(
+        find.byKey(const ValueKey('trader-restock-custom')),
+      );
+      expect(statusRow.top, lessThan(firstFact.top));
+      expect((statusValue.right - statusRow.right).abs(), lessThan(1));
+      expect(
+        (customButton.right - (restockCard.right - 12)).abs(),
+        lessThan(1),
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('trader-restock-status')),
+          matching: find.byIcon(Icons.hourglass_bottom),
+        ),
+        findsOneWidget,
+      );
+
+      final notifier = ProviderScope.containerOf(
+        tester.element(find.byType(Scaffold).first),
+      ).read(editorProvider.notifier);
+      final setNow = find.byKey(const ValueKey('trader-restock-set-now'));
+      await tester.ensureVisible(setNow);
+      await tester.tap(setNow);
+      await tester.pumpAndSettle();
+      var pending = notifier.pendingEditFor('traders:7:activityTime')!;
+      expect((pending.edits.single['value'] as Map)['value'], 1000000.0);
+      expect(find.widgetWithText(FilledButton, 'Save (1)'), findsOneWidget);
+
+      // A second action replaces the same pending timestamp and chooses a value
+      // old enough for both the calendar-boundary and elapsed-time readings.
+      final makeDue = find.byKey(const ValueKey('trader-restock-make-due'));
+      await tester.ensureVisible(makeDue);
+      await tester.tap(makeDue);
+      await tester.pumpAndSettle();
+      pending = notifier.pendingEditFor('traders:7:activityTime')!;
+      expect((pending.edits.single['value'] as Map)['value'], 740799.0);
+      expect(pending.edits, hasLength(1));
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('trader-restock-status')),
+          matching: find.byIcon(Icons.check_circle_outline),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Ready for restock'), findsOneWidget);
+      expect(
+        find.byTooltip(
+          "Move the merchant's last activity far enough back that restocking should be due now.",
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('trader-restock-revert')));
+      await tester.pumpAndSettle();
+      expect(notifier.pendingEditFor('traders:7:activityTime'), isNull);
+
+      final custom = find.byKey(const ValueKey('trader-restock-custom'));
+      await tester.ensureVisible(custom);
+      await tester.tap(custom);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('game-time-dialog')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const ValueKey('game-time-day-field')),
+        '14',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('game-time-hour-field')),
+        '1',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('game-time-minute-field')),
+        '2',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('game-time-second-field')),
+        '3',
+      );
+      await tester.tap(find.byKey(const ValueKey('confirm-game-time')));
+      await tester.pumpAndSettle();
+      pending = notifier.pendingEditFor('traders:7:activityTime')!;
+      expect(
+        (pending.edits.single['value'] as Map)['value'],
+        14 * secondsPerDay + 3600 + 120 + 3,
+      );
+    });
+
+    testWidgets('only current stock is shown and remains editable', (
+      tester,
+    ) async {
+      final core = _TraderCoreService(playerIsTrader: true);
+      await pumpApp(tester, core);
+      await tester.tap(find.widgetWithText(Tab, 'Characters'));
+      await tester.pumpAndSettle();
+      await tester.tap(detailTab('Trade'));
+      await tester.pumpAndSettle();
+
+      const loaf = '/Script/Angelscript.ItFo_Loaf';
+      await tester.tap(find.text('Food (2)'));
+      await tester.pumpAndSettle();
+      final currentRow = find.byKey(
+        const ValueKey((TraderStockMap.current, loaf)),
+      );
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(of: currentRow, matching: find.byType(TextField)),
+            )
+            .enabled,
+        isTrue,
+      );
+
+      expect(find.text('Restock baseline'), findsNothing);
+      expect(find.byType(SegmentedButton<TraderStockMap>), findsNothing);
+      expect(find.text('Add item'), findsOneWidget);
+      final baseRow = find.byKey(const ValueKey((TraderStockMap.base, loaf)));
+      expect(baseRow, findsNothing);
+    });
+
+    testWidgets('ore and restock cards share a row when space allows', (
+      tester,
+    ) async {
+      await pumpApp(tester, _TraderCoreService(playerIsTrader: true));
+      await tester.tap(find.widgetWithText(Tab, 'Characters'));
+      await tester.pumpAndSettle();
+      await tester.tap(detailTab('Trade'));
+      await tester.pumpAndSettle();
+
+      final ore = tester.getRect(find.byKey(const ValueKey('trader-ore-card')));
+      final restock = tester.getRect(
+        find.byKey(const ValueKey('trader-restock-card')),
+      );
+      expect((ore.top - restock.top).abs(), lessThan(1));
+      expect(restock.left, greaterThan(ore.right));
+      expect((ore.height - restock.height).abs(), lessThan(1));
+      expect(
+        find.text(
+          'Starting value — the amount in the trade screen can differ.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byTooltip(
+          'The in-game figure differs: on load the game adds what accrued since his last trade — he sells surplus goods and restocks from it. This number is the starting point, not what the trade screen shows.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('trader add dialog repeats the removal warning', (
+      tester,
+    ) async {
+      await pumpApp(tester, _TraderCoreService(playerIsTrader: true));
+      await tester.tap(find.widgetWithText(Tab, 'Characters'));
+      await tester.pumpAndSettle();
+      await tester.tap(detailTab('Trade'));
+      await tester.pumpAndSettle();
+
+      final notes = find.byKey(const ValueKey('trader-notes-card'));
+      expect(
+        find.descendant(
+          of: notes,
+          matching: find.text(
+            "Changes to the merchant's inventory last only until the next restock.",
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: notes,
+          matching: find.byIcon(Icons.warning_amber_outlined),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Add item'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      final dialogWarning = find.byKey(const ValueKey('add-item-warning'));
+      expect(dialogWarning, findsOneWidget);
+      expect(
+        tester.widget<Text>(dialogWarning).data,
+        "Changes to the merchant's inventory last only until the next restock.",
+      );
+    });
+
+    testWidgets('sentinel and missing clock/path stay explicit and read-only', (
+      tester,
+    ) async {
+      await pumpApp(
+        tester,
+        _TraderCoreService(
+          playerIsTrader: true,
+          activitySeconds: kTraderNeverActiveSeconds,
+          worldSeconds: null,
+          hasActivityPath: false,
+        ),
+      );
+      await tester.tap(find.widgetWithText(Tab, 'Characters'));
+      await tester.pumpAndSettle();
+      await tester.tap(detailTab('Trade'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byTooltip('No merchant activity has been recorded yet.'),
+        findsNothing,
+      );
+      expect(find.text('No activity'), findsOneWidget);
+      expect(find.text('Never'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('trader-restock-status')),
+          matching: find.byIcon(Icons.history_toggle_off),
+        ),
+        findsOneWidget,
+      );
+      final custom = tester.widget<IconButton>(
+        find.byKey(const ValueKey('trader-restock-custom')),
+      );
+      expect(custom.onPressed, isNull);
     });
 
     testWidgets('a queued addition is visible before the save', (tester) async {
@@ -812,6 +1166,12 @@ void main() {
       await tester.tap(detailTab('Trade'));
       await tester.pumpAndSettle();
 
+      final ore = tester.getRect(find.byKey(const ValueKey('trader-ore-card')));
+      final restock = tester.getRect(
+        find.byKey(const ValueKey('trader-restock-card')),
+      );
+      expect(restock.top, greaterThanOrEqualTo(ore.bottom));
+
       final notifier = ProviderScope.containerOf(
         tester.element(find.byType(Scaffold).first),
       ).read(editorProvider.notifier);
@@ -958,86 +1318,6 @@ void main() {
       );
     });
 
-    testWidgets('a row is keyed by map AND path, not path alone', (
-      tester,
-    ) async {
-      // The same item lives in both maps. Keyed on the path alone, one row's
-      // field state carries across a map switch; the count shown then depends
-      // on whether anything happens to resync it, which is not a property to
-      // rely on. Keying by both makes the two rows distinct outright.
-      //
-      // Note the reuse is not reachable by tapping the switch — that moves
-      // focus, and the blur listener resyncs — so this asserts the key rather
-      // than a user-visible symptom.
-      await pumpApp(tester, _TraderCoreService(playerIsTrader: true));
-      await tester.tap(find.widgetWithText(Tab, 'Characters'));
-      await tester.pumpAndSettle();
-      await tester.tap(detailTab('Trade'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Food (2)'));
-      await tester.pumpAndSettle();
-
-      const loaf = '/Script/Angelscript.ItFo_Loaf';
-      expect(
-        find.byKey(const ValueKey((TraderStockMap.current, loaf))),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey((TraderStockMap.base, loaf))),
-        findsNothing,
-      );
-      expect(
-        find.byKey(
-          const ValueKey((
-            'trader-item-image',
-            TraderStockMap.current,
-            loaf,
-            'ItFo_Loaf',
-          )),
-        ),
-        findsOneWidget,
-      );
-
-      await tester.tap(find.text('Restock baseline'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Food (1)'));
-      await tester.pumpAndSettle();
-
-      // A distinct key, so the row cannot inherit the other map's field state.
-      expect(
-        find.byKey(const ValueKey((TraderStockMap.base, loaf))),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey((TraderStockMap.current, loaf))),
-        findsNothing,
-      );
-      expect(
-        find.byKey(
-          const ValueKey((
-            'trader-item-image',
-            TraderStockMap.base,
-            loaf,
-            'ItFo_Loaf',
-          )),
-        ),
-        findsOneWidget,
-      );
-      // And it shows the baseline's own count.
-      expect(
-        tester
-            .widget<TextField>(
-              find.descendant(
-                of: find.byKey(const ValueKey((TraderStockMap.base, loaf))),
-                matching: find.byType(TextField),
-              ),
-            )
-            .controller
-            ?.text,
-        '9',
-      );
-    });
-
     testWidgets('the save aborts rather than splitting a trader/array pair', (
       tester,
     ) async {
@@ -1105,9 +1385,12 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(
-        find.descendant(of: oreCard, matching: find.byIcon(Icons.undo)),
+      final undo = find.descendant(
+        of: oreCard,
+        matching: find.byIcon(Icons.undo),
       );
+      await tester.ensureVisible(undo);
+      await tester.tap(undo);
       await tester.pump();
 
       expect(tester.widget<TextField>(field).controller?.text, '55');
@@ -1246,7 +1529,7 @@ void main() {
       expect(detailTabsCanCarryLabels(6 * 132 - 1), isFalse);
     });
 
-    testWidgets('a merchant shows his ore and both stock sections', (
+    testWidgets('a merchant shows ore, restock timing and current stock', (
       tester,
     ) async {
       final core = _TraderCoreService(playerIsTrader: true);
@@ -1257,8 +1540,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ore (purchasing power)'), findsOneWidget);
-      expect(find.text('Stock'), findsOneWidget);
-      expect(find.text('Restock baseline'), findsOneWidget);
+      expect(find.text('Restock timer'), findsOneWidget);
+      expect(find.text('Restock baseline'), findsNothing);
+      expect(find.byType(SegmentedButton<TraderStockMap>), findsNothing);
       // The detail is fetched by INDEX, never by the name.
       final detail = core.requests.firstWhere(
         (r) => r.command == 'private.traders.detail',
@@ -1286,11 +1570,17 @@ class _TraderCoreService implements GoresaveCoreService {
     this.stockMapsPresent = true,
     this.oreOnly = false,
     this.writable,
+    this.worldSeconds = 1000000,
+    this.activitySeconds = 937101.34,
+    this.hasActivityPath = true,
   });
 
   /// Override the advertised command list. The core drops setStock when no shop
   /// holds a line, while still offering addItem.
   final List<String>? writable;
+  final double? worldSeconds;
+  final double activitySeconds;
+  final bool hasActivityPath;
 
   /// A merchant holding nothing but his ore: the live stock has one line, and
   /// it is the one the ore card takes out of the list.
@@ -1407,7 +1697,7 @@ class _TraderCoreService implements GoresaveCoreService {
                 'itemCount': 2,
                 'defaultItemCount': 2,
                 'ore': 55,
-                'totalSeconds': 937101.34,
+                'totalSeconds': activitySeconds,
                 'traded': true,
                 'generatedEventCount': 11,
                 'placeholder': false,
@@ -1433,7 +1723,7 @@ class _TraderCoreService implements GoresaveCoreService {
             'itemCount': 2,
             'defaultItemCount': 2,
             'ore': 55,
-            'totalSeconds': 937101.34,
+            'totalSeconds': activitySeconds,
             'traded': true,
             'generatedEventCount': 11,
             'placeholder': false,
@@ -1489,7 +1779,59 @@ class _TraderCoreService implements GoresaveCoreService {
               },
             ],
             'generatedEvents': ['OnWorldStart'],
+            if (hasActivityPath)
+              'totalSecondsPath': [
+                'm_GenericData',
+                '{GameStateDataBase}',
+                'm_Traders',
+                '[7]',
+                'm_TotalSeconds',
+              ],
             'hasItemsByDifficulty': hasItemsByDifficulty,
+          },
+        };
+      case 'search_typed_properties':
+        if (payload['query'] == 'GameTime' && worldSeconds != null) {
+          return {
+            'ok': true,
+            'data': {
+              'source': 'private',
+              'offset': 0,
+              'limit': payload['limit'] ?? 1000,
+              'total': 1,
+              'count': 1,
+              'results': [
+                {
+                  'id': 'private:game-time',
+                  'source': 'private',
+                  'path': [
+                    'm_GenericData',
+                    '{GameTime}',
+                    'CurrentTime',
+                    'TotalSeconds',
+                  ],
+                  'display': 'GameTime',
+                  'type': 'DoubleProperty',
+                  'kind': 'scalar',
+                  'value': worldSeconds.toString(),
+                  'editValue': worldSeconds,
+                  'editable': true,
+                  'childCount': 0,
+                  'depth': 2,
+                },
+              ],
+            },
+          };
+        }
+        return {
+          'ok': true,
+          'data': {
+            'source': 'private',
+            'offset': 0,
+            'limit': payload['limit'] ?? 1000,
+            'total': 0,
+            'count': 0,
+            'results': <Object?>[],
           },
         };
       case 'list_backups':

@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-09-06
+
+### Added
+
+- The Trade tab now shows a merchant's last activity, expected restock window and
+  current restock status. The timestamp can be set to the current game time,
+  moved back to make restocking due, or entered freely.
+
+### Changed
+
+- The misleading restock-baseline editor has been removed because the game
+  rebuilds that inventory itself. The tab now focuses on the merchant's current
+  stock and clearly warns that changes last only until the next restock.
+- Ore and restock details now use a compact responsive layout with concise status
+  information and explanatory tooltips.
+
 ## [1.4.0] - 2026-08-31
 
 ### Added

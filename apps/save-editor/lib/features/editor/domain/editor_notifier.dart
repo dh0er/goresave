@@ -902,6 +902,15 @@ class EditorNotifier extends StateNotifier<EditorState> {
   /// without reaching into the protected `state`.
   PendingSaveEdit? pendingEditFor(String key) => state.pendingEdits[key];
 
+  /// Unsaved world-clock value, when the Overview clock is being edited.
+  /// Trader "set to world time" actions use this instead of the stale on-disk
+  /// clock so both edits agree when saved together.
+  double? pendingGameTimeSeconds() {
+    final value = state.pendingEdits['gameTime']?.edits.firstOrNull?['value'];
+    final seconds = value is Map ? value['value'] : null;
+    return seconds is num ? seconds.toDouble() : null;
+  }
+
   /// The effective Resources difficulty level for the INSPECTED save, normalized
   /// to 'Novice' | 'Gothic' | 'Hard' — used to pick the inventory-reset
   /// start-save. Falls back to 'Gothic' when nothing resolves.
@@ -921,7 +930,15 @@ class EditorNotifier extends StateNotifier<EditorState> {
   /// resources class. Only a Custom preset — or a profile with no recognized
   /// preset to imply from — lets the stored Resources sub-level decide (else
   /// Gothic).
-  String activeResourcesLevel() {
+  String activeResourcesLevel() => activeResourcesLevelForRestock() ?? 'Gothic';
+
+  /// Resources level for merchant timing. Unlike [activeResourcesLevel], this
+  /// refuses an unrecognised future/modded difficulty instead of inventing a
+  /// Gothic interval for a countdown the game may not use.
+  ///
+  /// A save with no difficulty data at all still means the shipped default,
+  /// Gothic. Only a present-but-unrecognised setting is unknown.
+  String? activeResourcesLevelForRestock() {
     const known = {'Novice', 'Gothic', 'Hard'};
     // A directory profile's difficulty by id, only when it carries values.
     DifficultySettings? profileDifficulty(int? id) {
@@ -957,7 +974,7 @@ class EditorNotifier extends StateNotifier<EditorState> {
       _ =>
         known.contains(difficulty.resourcesLabel)
             ? difficulty.resourcesLabel
-            : 'Gothic',
+            : null,
     };
   }
 
@@ -3460,6 +3477,14 @@ class EditorNotifier extends StateNotifier<EditorState> {
 
   /// Drop a queued trader change (the user reverted the field).
   void clearTraderStockEdit(TraderStockEdit edit) =>
+      clearPendingEdit(edit.pendingKey);
+
+  /// Queue or clear the fixed-size activity timestamp of one merchant.
+  void setTraderActivityTimeEdit(TraderActivityTimeEdit edit) {
+    setPendingEdit(edit.pendingKey, PendingSaveEdit(edits: [edit.toEdit()]));
+  }
+
+  void clearTraderActivityTimeEdit(TraderActivityTimeEdit edit) =>
       clearPendingEdit(edit.pendingKey);
 
   /// Run one progression section query. Returns the raw data map, or null

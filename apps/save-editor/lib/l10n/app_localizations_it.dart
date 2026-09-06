@@ -448,18 +448,164 @@ class AppLocalizationsIt extends AppLocalizations {
   String get traderNoOre => 'nessun minerale';
 
   @override
-  String get traderStockCurrent => 'Scorte';
+  String get traderStockCurrent => 'Scorte salvate';
 
   @override
-  String get traderStockBase => 'Base di rifornimento';
+  String get traderStockCurrentTooltip =>
+      'Le scorte attualmente salvate per questo mercante. Gli oggetti aggiunti possono scomparire quando il gioco aggiorna nuovamente il mercante.';
+
+  @override
+  String get traderStockBase => 'Scorte di riferimento';
+
+  @override
+  String get traderStockBaseTooltip =>
+      'Una copia salvata che il gioco può modificare o ricreare secondo le sue regole per questo mercante. È in sola lettura e non conserva in modo permanente gli oggetti aggiunti.';
 
   @override
   String get traderStockBaseHint =>
-      'Ciò verso cui il mercante si rifornisce. Cresce con la storia, quindi non è uno stato originale.';
+      'Sola lettura. Queste scorte salvate crescono con la storia e possono essere sostituite secondo le regole del mercante. Non sono le scorte originali del gioco.';
+
+  @override
+  String get traderCurrentStockWarning =>
+      'Le modifiche all\'inventario del mercante durano solo fino al prossimo rifornimento.';
+
+  @override
+  String get traderRestockTitle => 'Rifornimento stimato';
+
+  @override
+  String get traderRestockTitleTooltip =>
+      'Stima basata sull\'ultima attività del mercante, sull\'ora di gioco e sulla difficoltà Risorse.';
+
+  @override
+  String get traderRestockPending => 'in sospeso';
+
+  @override
+  String get traderRestockRevertTooltip =>
+      'Annulla la modifica non salvata dell\'ultima attività';
+
+  @override
+  String get traderRestockNever => 'Mai';
+
+  @override
+  String get traderRestockUnavailable => 'Non disponibile';
+
+  @override
+  String get traderRestockIntervalUnknown =>
+      'Numero di giorni di gioco sconosciuto';
+
+  @override
+  String get traderRestockNeverStatus =>
+      'Non è ancora stata registrata alcuna attività per questo mercante.';
+
+  @override
+  String get traderRestockClockAhead =>
+      'L\'ultima attività del mercante è successiva all\'ora di gioco attuale.';
+
+  @override
+  String traderRestockNotDueYet(String time) {
+    return 'Non previsto prima di $time.';
+  }
+
+  @override
+  String get traderRestockPossiblyDue =>
+      'Stima: le scorte potrebbero essere già pronte per l\'aggiornamento.';
+
+  @override
+  String get traderRestockEligible => 'Stima: il rifornimento è previsto.';
+
+  @override
+  String get traderRestockNoWorldTime =>
+      'L\'ora di gioco attuale non è disponibile, quindi non è possibile fare una stima.';
+
+  @override
+  String get traderRestockLastActivity => 'Ultima attività del mercante';
+
+  @override
+  String get traderRestockLastActivityTooltip =>
+      'Quest\'ora salvata può cambiare dopo uno scambio o quando il gioco aggiorna le scorte. Non indica necessariamente l\'ultimo rifornimento.';
+
+  @override
+  String get traderRestockForecastWindow => 'Periodo stimato';
+
+  @override
+  String get traderRestockForecastWindowTooltip =>
+      'Mostra il momento più vicino e quello più lontano in cui il rifornimento sembra probabile. Le regole esatte del gioco non sono presenti nel salvataggio, quindi è solo una stima.';
+
+  @override
+  String get traderRestockIntervalLabel => 'Giorni tra i rifornimenti';
+
+  @override
+  String traderRestockInterval(int days, String level) {
+    return '$days giorni · $level';
+  }
+
+  @override
+  String get traderRestockIntervalTooltip =>
+      'In base alla difficoltà Risorse: Principiante 2, Gothic 3, Difficile 5 giorni di gioco.';
+
+  @override
+  String get traderRestockAutomationLabel => 'Rifornimento automatico';
+
+  @override
+  String get traderRestockAutomationValue =>
+      'Non può essere disattivato nel salvataggio';
+
+  @override
+  String get traderRestockAutomationTooltip =>
+      'Il rifornimento automatico non può essere disattivato in un salvataggio. Solo una mod può cambiare questa regola del gioco.';
+
+  @override
+  String get traderRestockSetNow => 'Imposta sull\'ora di gioco';
+
+  @override
+  String get traderRestockSetNowTooltip =>
+      'Usa l\'ora di gioco attuale, compresa una modifica non salvata, come ultima attività del mercante. Questo sposta più avanti il prossimo rifornimento stimato.';
+
+  @override
+  String get traderRestockMakeDue => 'Prepara il rifornimento';
+
+  @override
+  String get traderRestockMakeDueTooltip =>
+      'Sposta abbastanza indietro l\'ultima attività perché il rifornimento sia previsto.';
+
+  @override
+  String get traderRestockCustom => 'Ora personalizzata…';
+
+  @override
+  String get traderRestockCustomTooltip =>
+      'Scegli il giorno e l\'ora di gioco dell\'ultima attività del mercante.';
+
+  @override
+  String get traderRestockEditTitle => 'Ultima attività del mercante';
 
   @override
   String get traderOreHint =>
       'Il valore nel gioco è diverso: al caricamento il gioco aggiunge quanto maturato dall\'ultimo scambio — vende le eccedenze e si rifornisce. Questo numero è il punto di partenza, non quello mostrato nella schermata di commercio.';
+
+  @override
+  String get traderOreHintShort =>
+      'Valore iniziale: l\'importo nella schermata di commercio può variare.';
+
+  @override
+  String get traderRestockStatusLabel => 'Stato';
+
+  @override
+  String get traderRestockStatusNever => 'Nessuna attività';
+
+  @override
+  String get traderRestockStatusWaiting => 'In attesa del rifornimento';
+
+  @override
+  String get traderRestockStatusReady => 'Pronto per il rifornimento';
+
+  @override
+  String get traderRestockStatusPossiblyReady => 'Forse pronto';
+
+  @override
+  String get traderRestockStatusCheckTime => 'Controlla l\'ora salvata';
+
+  @override
+  String get traderRestockStatusUnknown => 'Sconosciuto';
 
   @override
   String get traderPriceWarning =>
@@ -496,7 +642,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String traderStockLineCount(int count) {
-    return '$count righe';
+    return '$count articoli';
   }
 
   @override
