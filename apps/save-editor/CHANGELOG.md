@@ -23,10 +23,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The misleading restock-baseline editor has been removed because the game
   rebuilds that inventory itself. The tab now focuses on the merchant's current
   stock and clearly warns that changes last only until the next restock.
-- Ore and restock details now use a compact responsive layout with concise status
-  information and explanatory tooltips.
-- The Resources difficulty shown beside the restock wait now follows the app
-  language.
 
 ## [1.4.0] - 2026-08-31
 
