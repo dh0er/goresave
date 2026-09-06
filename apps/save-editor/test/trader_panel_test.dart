@@ -637,6 +637,33 @@ void main() {
       expect(baseRow, findsNothing);
     });
 
+    testWidgets('custom time can initialize a never-active merchant', (
+      tester,
+    ) async {
+      final core = _TraderCoreService(
+        playerIsTrader: true,
+        activitySeconds: kTraderNeverActiveSeconds,
+      );
+      await pumpApp(tester, core);
+      await tester.tap(find.widgetWithText(Tab, 'Characters'));
+      await tester.pumpAndSettle();
+      await tester.tap(detailTab('Trade'));
+      await tester.pumpAndSettle();
+
+      final notifier = ProviderScope.containerOf(
+        tester.element(find.byType(Scaffold).first),
+      ).read(editorProvider.notifier);
+      final custom = find.byKey(const ValueKey('trader-restock-custom'));
+      await tester.ensureVisible(custom);
+      await tester.tap(custom);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('confirm-game-time')));
+      await tester.pumpAndSettle();
+
+      final pending = notifier.pendingEditFor('traders:7:activityTime')!;
+      expect((pending.edits.single['value'] as Map)['value'], 1000000.0);
+    });
+
     testWidgets('ore and restock cards share a row when space allows', (
       tester,
     ) async {

@@ -453,7 +453,11 @@ class _TraderPanelState extends ConsumerState<TraderPanel> {
     // The dialog shows whole seconds. Treat an unchanged display value as a
     // no-op so confirming it cannot discard a stored sub-second fraction (or
     // replace an existing pending value with its truncated representation).
-    if (edited.toTotalSeconds() == initial.toTotalSeconds()) return;
+    // A never-active merchant is different: its displayed value is the world
+    // time fallback, not the stored sentinel, so confirming must queue it.
+    if (current >= 0 && edited.toTotalSeconds() == initial.toTotalSeconds()) {
+      return;
+    }
     _queueActivityTime(edited.toTotalSeconds().toDouble());
   }
 
