@@ -572,6 +572,14 @@ void main() {
       await tester.tap(custom);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('game-time-dialog')), findsOneWidget);
+      // The loaded activity has a sub-second fraction. Confirming the whole-
+      // second clock shown by the dialog must preserve it as a true no-op.
+      await tester.tap(find.byKey(const ValueKey('confirm-game-time')));
+      await tester.pumpAndSettle();
+      expect(notifier.pendingEditFor('traders:7:activityTime'), isNull);
+
+      await tester.tap(custom);
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('game-time-day-field')),
         '14',

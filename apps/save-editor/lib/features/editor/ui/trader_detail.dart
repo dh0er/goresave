@@ -439,16 +439,21 @@ class _TraderPanelState extends ConsumerState<TraderPanel> {
         widget.notifier.pendingGameTimeSeconds() ??
         _gameTime?.totalSeconds ??
         0;
+    final initial = GameTimeParts.fromTotalSeconds(
+      current >= 0 ? current : fallback,
+    );
     final edited = await showDialog<GameTimeParts>(
       context: context,
       builder: (_) => GameTimeDialog(
-        initialValue: GameTimeParts.fromTotalSeconds(
-          current >= 0 ? current : fallback,
-        ),
+        initialValue: initial,
         title: AppLocalizations.of(context).traderRestockEditTitle,
       ),
     );
     if (!mounted || edited == null) return;
+    // The dialog shows whole seconds. Treat an unchanged display value as a
+    // no-op so confirming it cannot discard a stored sub-second fraction (or
+    // replace an existing pending value with its truncated representation).
+    if (edited.toTotalSeconds() == initial.toTotalSeconds()) return;
     _queueActivityTime(edited.toTotalSeconds().toDouble());
   }
 
