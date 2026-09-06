@@ -1815,14 +1815,38 @@ fn guarded_pristine_script_cache(
     }
 }
 
+/// The Shipping cache file the standalone compiler target is validated against: the
+/// deployment-aware pristine source. While a script mod is installed that is the deployment's
+/// `*.gore-bak`, so the installed mod stays in place and the compiler still works from the
+/// original the deployment preserved; otherwise it is the live cache.
+fn compiler_shipping_source(game: &Path) -> Result<gore_mod::PristineScriptCacheSource> {
+    gore_mod::pristine_script_cache_source(game)
+        .context("selecting the deployment-aware pristine script cache")
+}
+
+fn announce_compiler_shipping_source(source: &gore_mod::PristineScriptCacheSource) {
+    if source.from_backup {
+        eprintln!(
+            "compiling against the deployment backup {} (the installed script mod stays in place)",
+            source.path.display()
+        );
+    }
+}
+
+/// Prove that the pinned compiler target holds the pristine base: its bytes must be the current
+/// deployment-aware pristine cache AND the bytes selected before the pin was taken. Anything else
+/// means the base changed in between (a deployment change or a game update ran alongside), which
+/// is a retry and never a reason to remove the installed mod.
 fn require_qualified_target_pristine_base(
+    selected: &gore_mod::PristineScriptCacheSource,
     qualified_shipping: &[u8],
     pristine: Vec<u8>,
 ) -> Result<Vec<u8>> {
-    if qualified_shipping != pristine {
+    if qualified_shipping != pristine || !selected.matches(qualified_shipping) {
         bail!(
-            "standalone compiler target uses the live Shipping cache, but the deployment-aware \
-             pristine script cache differs; reset or undeploy active script mods before compiling"
+            "the standalone compiler target no longer holds the deployment-aware pristine script \
+             cache: the base changed between selecting it and pinning it (a deployment change or \
+             a game update ran alongside); retry the compile"
         );
     }
     Ok(pristine)
@@ -1831,10 +1855,11 @@ fn require_qualified_target_pristine_base(
 fn qualified_target_pristine_script_cache(
     game: &Path,
     target: &gore_as::compiler_target::ValidatedCompilerTargetInputsV1,
+    selected: &gore_mod::PristineScriptCacheSource,
 ) -> Result<Vec<u8>> {
     let pristine = gore_mod::pristine_script_cache(game)
         .context("reading the deployment-aware pristine script cache")?;
-    require_qualified_target_pristine_base(target.shipping_cache(), pristine)
+    require_qualified_target_pristine_base(selected, target.shipping_cache(), pristine)
 }
 
 fn compiler_binds_path(game: &Path) -> PathBuf {
@@ -1855,15 +1880,6 @@ fn compiler_executable_path(game: &Path) -> PathBuf {
     g1r.join("Binaries")
         .join("Win64")
         .join("G1R-Win64-Shipping.exe")
-}
-
-fn compiler_shipping_path(game: &Path) -> PathBuf {
-    let g1r = if game.file_name().is_some_and(|name| name == "G1R") {
-        game.to_path_buf()
-    } else {
-        game.join("G1R")
-    };
-    g1r.join("Script").join("PrecompiledScript_Shipping.Cache")
 }
 
 enum ProductStandaloneRunnerV1 {
@@ -2006,7 +2022,9 @@ fn compile_full_graph_command(
     }
 
     let executable_path = compiler_executable_path(&game);
-    let shipping_path = compiler_shipping_path(&game);
+    let shipping_source = compiler_shipping_source(&game)?;
+    announce_compiler_shipping_source(&shipping_source);
+    let shipping_path = shipping_source.path.clone();
     let binds_path = compiler_binds_path(&game);
     let host_module = std::env::current_exe().context("resolving the GORE host executable")?;
     let resolution = gore_as::standalone_package_resolver::resolve_embedded_product_standalone_compiler_package_for_inputs_v1(
@@ -2101,7 +2119,7 @@ fn compile_full_graph_command(
         }
     }
     let (base_cache, binds_cache) = if let Some(target) = target.as_ref() {
-        let base = match qualified_target_pristine_script_cache(&game, target) {
+        let base = match qualified_target_pristine_script_cache(&game, target, &shipping_source) {
             Ok(base) => base,
             Err(error) => {
                 return match guard.take() {
@@ -3406,7 +3424,9 @@ pub fn run(cmd: AsCmd) -> Result<()> {
             )?;
             let requested_mode: gore_as::compile::CompilerBackendModeV1 = compiler.backend.into();
             let executable_path = compiler_executable_path(&game);
-            let shipping_path = compiler_shipping_path(&game);
+            let shipping_source = compiler_shipping_source(&game)?;
+            announce_compiler_shipping_source(&shipping_source);
+            let shipping_path = shipping_source.path.clone();
             let binds_path = compiler_binds_path(&game);
             let target_paths = gore_as::compiler_target::CompilerTargetInputPathsV1 {
                 executable: &executable_path,
@@ -3547,7 +3567,8 @@ pub fn run(cmd: AsCmd) -> Result<()> {
                     }
                     Some(acquired)
                 };
-                let base = match qualified_target_pristine_script_cache(&game, target) {
+                let base = qualified_target_pristine_script_cache(&game, target, &shipping_source);
+                let base = match base {
                     Ok(base) => base,
                     Err(error) => {
                         return match guard {
@@ -6112,20 +6133,117 @@ mod default_cli_tests {
         assert!(dropped.load(std::sync::atomic::Ordering::SeqCst));
     }
 
+    /// Writes the on-disk state a script deployment leaves behind: the modded live cache, the
+    /// pristine `*.gore-bak`, and a deploy record that authenticates both.
+    fn install_script_mod_record(game: &Path, pristine: &[u8], deployed: &[u8]) -> PathBuf {
+        let live = game.join("G1R/Script/PrecompiledScript_Shipping.Cache");
+        let backup = PathBuf::from(format!("{}.gore-bak", live.display()));
+        std::fs::write(&backup, pristine).unwrap();
+        std::fs::write(&live, deployed).unwrap();
+        // Production deploy records persist canonical paths even when the caller uses an alias.
+        let recorded_live = std::fs::canonicalize(&live).unwrap();
+        let recorded_backup = std::fs::canonicalize(&backup).unwrap();
+        let identity = |bytes: &[u8]| format!("sha256:{:x}", Sha256::digest(bytes));
+        let mut record = gore_mod::DeployRecord {
+            mod_name: "fixture".to_owned(),
+            backups: vec![(
+                recorded_live.display().to_string(),
+                recorded_backup.display().to_string(),
+                true,
+            )],
+            ..Default::default()
+        };
+        record
+            .deployed_hashes
+            .insert(recorded_live.display().to_string(), identity(deployed));
+        record
+            .backup_hashes
+            .insert(recorded_backup.display().to_string(), identity(pristine));
+        std::fs::write(
+            game.join("gore-mod.deployed.json"),
+            serde_json::to_vec(&record).unwrap(),
+        )
+        .unwrap();
+        backup
+    }
+
+    /// While a script mod is installed, the compiler target is validated against the
+    /// deployment's pristine backup, not the modded live cache, so the mod stays installed while
+    /// its next version compiles.
     #[test]
-    fn standalone_target_must_match_the_deployment_aware_pristine_base() {
-        let pristine = b"pristine-cache".to_vec();
+    fn compiler_shipping_source_is_the_deployment_backup_while_a_script_mod_is_installed() {
+        let root = tempfile::tempdir().unwrap();
+        let game = root.path().join("game");
+        let script = game.join("G1R/Script");
+        std::fs::create_dir_all(&script).unwrap();
+        let live = script.join("PrecompiledScript_Shipping.Cache");
+        std::fs::write(&live, b"pristine").unwrap();
+
+        let untouched = compiler_shipping_source(&game).unwrap();
+        assert_eq!(untouched.path, live);
+        assert!(!untouched.from_backup);
+        assert!(untouched.matches(b"pristine"));
+
+        let backup = install_script_mod_record(&game, b"pristine", b"deployed");
+        let installed = compiler_shipping_source(&game).unwrap();
+        assert_eq!(installed.path, backup);
+        assert!(installed.from_backup);
+        assert!(installed.matches(b"pristine"));
+        assert!(!installed.matches(b"deployed"));
+        assert_eq!(std::fs::read(&live).unwrap(), b"deployed");
+    }
+
+    #[test]
+    fn standalone_target_must_carry_the_selected_pristine_base() {
+        let root = tempfile::tempdir().unwrap();
+        let game = root.path().join("game");
+        let live = game.join("G1R/Script/PrecompiledScript_Shipping.Cache");
+        std::fs::create_dir_all(live.parent().unwrap()).unwrap();
+        std::fs::write(&live, b"pristine-cache").unwrap();
+        let selected = compiler_shipping_source(&game).unwrap();
+
+        // The pinned target holds the current pristine bytes, which are the bytes selected
+        // before the pin.
         assert_eq!(
-            require_qualified_target_pristine_base(b"pristine-cache", pristine.clone()).unwrap(),
-            pristine
+            require_qualified_target_pristine_base(
+                &selected,
+                b"pristine-cache",
+                b"pristine-cache".to_vec()
+            )
+            .unwrap(),
+            b"pristine-cache"
         );
+
+        // The pinned target is not the current pristine cache: the base changed between the
+        // selection and the pin. That asks for a retry, not for an undeploy.
         let error = require_qualified_target_pristine_base(
+            &selected,
             b"live-cache-with-active-mod",
             b"pristine-cache".to_vec(),
         )
         .unwrap_err()
         .to_string();
-        assert!(error.contains("deployment-aware pristine script cache differs"));
+        assert!(
+            error.contains("changed between selecting it and pinning it"),
+            "got: {error}"
+        );
+        assert!(!error.contains("undeploy"), "got: {error}");
+
+        // The pinned target equals the current pristine cache, but not the bytes selected before
+        // the pin: the selection flipped underneath the compile.
+        std::fs::write(&live, b"other-cache").unwrap();
+        let flipped = compiler_shipping_source(&game).unwrap();
+        let error = require_qualified_target_pristine_base(
+            &flipped,
+            b"pristine-cache",
+            b"pristine-cache".to_vec(),
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(
+            error.contains("changed between selecting it and pinning it"),
+            "got: {error}"
+        );
     }
 
     #[test]

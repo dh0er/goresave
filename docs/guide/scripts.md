@@ -206,6 +206,20 @@ These are enforced, not advisory:
   artifacts and cross-tool ownership are retained and no usable compile result
   is returned.
 
+### Compiling while a script mod is installed
+
+An installed script mod does not have to be undeployed before its next version
+compiles. Every compile route validates the standalone compiler target against
+the deployment-aware pristine cache: while a deployment owns the script cache
+that is the `*.gore-bak` its record authenticates, otherwise the live file (also
+after a game update, when the backup is stale and the updated live cache is the
+new original). The CLI says so when it compiles against the backup. The pinned
+base is checked again after the pin and, for `gore as compile`, at the end of
+the run; if it changed in between, the compile fails closed and asks for a
+retry rather than an undeploy. The installed version is replaced only by the
+next `gore mod deploy` or Manager apply, which rebuild from the same pristine
+backup.
+
 ### Compiler diagnostics
 
 Strict `standalone` returns the bundled compiler's native diagnostics with the

@@ -875,27 +875,29 @@ fn compile_report_with_available_product_package(
         }
     };
     if !target_matches_pristine {
-        if requested == CompilerBackendWireV2::Standalone {
-            return attach_backend_evidence(
-                standalone_target_not_pristine_failure(),
-                backend_evidence_with_package(
-                    requested,
-                    None,
-                    false,
-                    false,
-                    Some(authority.identity()),
-                    None,
-                ),
-            );
-        }
-        runner_unavailable.get_or_insert_with(|| {
-            json!({
-                "failed_backend": CompilerBackendNameV1::Standalone.as_str(),
-                "failure_kind": "preflight",
-                "detail": "the authenticated standalone compiler target is the live deployed Shipping cache, not the deployment-aware pristine base; using the explicitly allowed game fallback",
-            })
-        });
-        runner = None;
+        // The target was pinned on the selected pristine source, so a mismatch is not an
+        // installed mod but a base that changed in between: fail closed in every mode rather
+        // than launching the game compiler over a moving base.
+        let failure = pristine_base_changed_failure();
+        let failure = match guard.take() {
+            Some(guard) => release_guard_after_preflight_failure(
+                guard,
+                failure,
+                "compiler base changed before launch",
+            ),
+            None => failure,
+        };
+        return attach_backend_evidence(
+            failure,
+            backend_evidence_with_package(
+                requested,
+                None,
+                false,
+                false,
+                Some(authority.identity()),
+                runner_unavailable.clone(),
+            ),
+        );
     }
     let opts = CompileOpts {
         game_dir: game_dir.clone(),
@@ -1017,10 +1019,10 @@ fn qualified_target_pristine_script_cache(
     Ok((pristine, target_matches_pristine))
 }
 
-fn standalone_target_not_pristine_failure() -> Value {
+fn pristine_base_changed_failure() -> Value {
     preflight_failure(
-        "COMPILE_STANDALONE_TARGET_NOT_PRISTINE",
-        "the authenticated standalone compiler target uses the live Shipping cache, but the deployment-aware pristine cache differs; reset or undeploy active script mods before compiling"
+        "COMPILE_PRISTINE_BASE_CHANGED",
+        "the pinned standalone compiler target no longer holds the deployment-aware pristine script cache: the base changed between selecting it and pinning it (a deployment change or a game update ran alongside); retry the compile"
             .to_owned(),
     )
 }
@@ -1836,11 +1838,17 @@ mod tests {
         assert_eq!(fallback_base, b"pristine");
         assert!(!fallback_matches);
 
-        let rejected = standalone_target_not_pristine_failure();
+        let rejected = pristine_base_changed_failure();
         assert_eq!(
             rejected["compile_error"]["code"],
-            "COMPILE_STANDALONE_TARGET_NOT_PRISTINE"
+            "COMPILE_PRISTINE_BASE_CHANGED"
         );
+        let message = rejected["compile_error"]["message"].as_str().unwrap();
+        assert!(
+            message.contains("changed between selecting it and pinning it"),
+            "got: {message}"
+        );
+        assert!(!message.contains("undeploy"), "got: {message}");
         assert_eq!(rejected["install_restore"], "not_started");
         assert_eq!(rejected["recovery_required"], false);
     }

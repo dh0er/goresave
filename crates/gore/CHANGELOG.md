@@ -5,6 +5,9 @@ uses the matching version section as the GitHub release notes.
 
 ## [Unreleased]
 
+- `gore as compile` and `compile-module` no longer require undeploying an
+  installed script mod first; the compiler target is the deployment's pristine
+  backup.
 - Support multi-module mini-caches: `gore as compile --mini` publishes the
   authored modules as one deployable mini, and build, deploy, the Manager and
   `as splice --upsert` compose it as one unit. Qualified in game with a
