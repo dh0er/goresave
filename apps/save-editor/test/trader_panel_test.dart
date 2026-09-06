@@ -641,6 +641,42 @@ void main() {
       expect(baseRow, findsNothing);
     });
 
+    testWidgets('replacing a pending world clock refreshes the forecast', (
+      tester,
+    ) async {
+      await pumpApp(tester, _TraderCoreService(playerIsTrader: true));
+      await tester.tap(find.widgetWithText(Tab, 'Characters'));
+      await tester.pumpAndSettle();
+      await tester.tap(detailTab('Trade'));
+      await tester.pumpAndSettle();
+
+      final notifier = ProviderScope.containerOf(
+        tester.element(find.byType(Scaffold).first),
+      ).read(editorProvider.notifier);
+      PendingSaveEdit worldClock(double seconds) => PendingSaveEdit(
+        edits: [
+          {
+            'path': 'private.typed.setValue',
+            'value': {'value': seconds},
+          },
+        ],
+      );
+
+      notifier.setPendingEdit('gameTime', worldClock(1000000));
+      await tester.pumpAndSettle();
+      expect(find.text('Waiting for restock'), findsOneWidget);
+
+      // Replacing the same key keeps pendingEdits.length at one.
+      notifier.setPendingEdit('gameTime', worldClock(2000000));
+      await tester.pumpAndSettle();
+      expect(find.text('Ready for restock'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('trader-restock-set-now')));
+      await tester.pumpAndSettle();
+      final activity = notifier.pendingEditFor('traders:7:activityTime')!;
+      expect((activity.edits.single['value'] as Map)['value'], 2000000.0);
+    });
+
     testWidgets('restock difficulty follows the app language', (tester) async {
       for (final (resourceClass, expected) in [
         ('Easy', '2 Tage · Novize'),

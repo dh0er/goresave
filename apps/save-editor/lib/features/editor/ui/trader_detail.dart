@@ -156,8 +156,9 @@ class _TraderPanelState extends ConsumerState<TraderPanel> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    // Rebuild when pending edits change so a reverted field drops its badge.
-    ref.watch(editorProvider.select((s) => s.pendingEdits.length));
+    // Rebuild for replacements too: changing an already-pending world clock
+    // keeps the map length stable but must update the restock forecast.
+    ref.watch(editorProvider.select((s) => s.pendingEdits));
 
     if (_loading) {
       return const Center(child: CircularProgressIndicator());

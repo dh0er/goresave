@@ -972,7 +972,9 @@ class EditorNotifier extends StateNotifier<EditorState> {
       // is authoritative (a non-Custom preset returned above and locked the
       // level to its tier).
       _ =>
-        known.contains(difficulty.resourcesLabel)
+        difficulty.resources == null
+            ? 'Gothic'
+            : known.contains(difficulty.resourcesLabel)
             ? difficulty.resourcesLabel
             : null,
     };

@@ -228,6 +228,22 @@ void main() {
       });
       expect(custom.activeResourcesLevel(), 'Novice');
 
+      // Older partial Custom profiles can omit Resources while still carrying
+      // another difficulty member. Restock keeps the game's Gothic fallback.
+      final customWithoutResources = await build({
+        'difficultyPreset': 'DifficultyPreset_Custom',
+        'customCombatSettings': 'CombatDifficultySettings_Hard',
+      });
+      expect(customWithoutResources.activeResourcesLevelForRestock(), 'Gothic');
+
+      // A present but unknown Resources class remains explicit and must not
+      // silently pick an interval.
+      final customUnknownResources = await build({
+        'difficultyPreset': 'DifficultyPreset_Custom',
+        'customResourcesSettings': 'ResourcesDifficultySettings_Unknown',
+      });
+      expect(customUnknownResources.activeResourcesLevelForRestock(), isNull);
+
       // A non-Custom preset LOCKS the level: a stale/disagreeing stored Resources
       // class is ignored (Hard preset + stale '_Standard' resources → 'Hard', NOT
       // 'Gothic'). Only Custom profiles let the sub-level override the preset.
